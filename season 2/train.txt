@@ -1,0 +1,1538 @@
+-- bssid shop 的计数1
+DROP TABLE IF EXISTS aaron_train_feature_shop_cwifi_count;
+
+CREATE TABLE aaron_train_feature_shop_cwifi_count
+AS
+SELECT *, rank() OVER (PARTITION BY bssid ORDER BY shop_cwifi_count DESC) as shop_cwifi_count_rank
+FROM (
+	SELECT shop_id, bssid, COUNT(*) AS shop_cwifi_count
+	FROM (
+		SELECT *
+		FROM aaron_unfold_train_feature1
+		WHERE flag = 'true'
+	) a
+	GROUP BY shop_id, 
+		bssid
+) a;
+
+-- bssid shop 的计数2, 特征用此表做join。
+DROP TABLE IF EXISTS aaron_train_feature_shop_cwifi_count_2;
+
+CREATE TABLE aaron_train_feature_shop_cwifi_count_2
+AS
+SELECT *, shop_cwifi_count / cwifi_count AS shop_cwifi_rate
+FROM (
+	SELECT *, SUM(shop_cwifi_count) OVER (PARTITION BY bssid ) AS cwifi_count
+	FROM aaron_train_feature_shop_cwifi_count
+) a;
+
+-- select * from aaron_train_feature_shop_cwifi_count limit 100;
+-- aaron_train_feature_cwifi_sample
+DROP TABLE IF EXISTS aaron_train_cwifi_sample;
+
+CREATE TABLE aaron_train_cwifi_sample
+AS
+SELECT a.row_id, b.shop_id
+FROM (
+	SELECT *
+	FROM aaron_unfold_train1
+	WHERE flag = 'true'
+) a
+INNER JOIN (
+	SELECT *
+	FROM aaron_train_feature_shop_cwifi_count
+	WHERE shop_cwifi_count_rank <= 3
+) b
+ON a.bssid = b.bssid;
+
+-- 主要针对没有连接wifi的记录。wifi经纬度代替店铺经纬度。
+
+-- feture data中此店铺消费并连接wifi的记录中，每条记录的地理位置作为wifi的多个地理位置。
+
+DROP TABLE IF EXISTS aaron_train_feature_shop_cwifi_loc_record;
+
+CREATE TABLE aaron_train_feature_shop_cwifi_loc_record
+AS
+SELECT *
+, rank() OVER (PARTITION BY row_id ORDER BY shop_condidate_avg_loss DESC) AS shop_condidate_avg_loss_rank
+, percent_rank() OVER (PARTITION BY row_id ORDER BY shop_condidate_avg_loss DESC) AS shop_condidate_avg_loss_percent_rank
+FROM (
+	SELECT row_id, mall_id, shop_condidate, COUNT(*) AS shop_condidate_count
+		, SUM(loss) AS shop_condidate_sum_loss, MAX(loss) AS shop_condidate_max_loss
+		, MIN(loss) AS shop_condidate_min_loss, AVG(loss) AS shop_condidate_avg_loss -- loss越大，距离越小。
+		, median(loss) AS shop_condidate_median_loss
+		-- , SUM(distance) AS shop_condidate_sum_distance, MAX(distance) AS shop_condidate_max_distance
+		-- , MIN(distance) AS shop_condidate_min_distance, AVG(distance) AS shop_condidate_avg_distance
+		-- , median(distance) AS shop_condidate_median_distance
+	FROM (
+		SELECT t.*, f.shop_id AS shop_condidate
+			, get_loss(t.longitude, t.latitude, f.longitude, f.latitude) AS loss
+			-- , get_distance(t.longitude, t.latitude, f.longitude, f.latitude) AS distance --	, f.longitude AS f_longitude, f.latitude AS f_latitude
+		FROM aaron_train_1 t
+		LEFT OUTER JOIN (
+			SELECT *
+			FROM aaron_unfold_train_feature1
+			WHERE flag = 'true'
+		) f
+		ON f.mall_id = t.mall_id
+	) a
+	GROUP BY row_id, 
+		mall_id, 
+		shop_condidate
+) a;
+
+-- select * from aaron_train_1  limit 10;
+DROP TABLE IF EXISTS aaron_train_loc_sample;
+
+CREATE TABLE aaron_train_loc_sample
+AS
+SELECT row_id, shop_condidate AS shop_id
+FROM aaron_train_feature_shop_cwifi_loc_record
+WHERE shop_condidate_avg_loss_rank <= 3;
+
+
+-- aaron_train_loc_sample
+
+-- select * from odps_tc_257100_f673506e024.ant_tianchi_ccf_sl_shop_info  limit 100;
+SELECT COUNT(*)
+	, SUM(is_right) / COUNT(*)
+	, SUM(num_count), SUM(is_right)
+FROM (
+	SELECT row_id, MAX(is_right) AS is_right, COUNT(*) AS num_count
+	FROM (
+		SELECT a.row_id
+			, IF(a.shop_id = b.shop_id, 1, 0) AS is_right
+		FROM aaron_train_1 a
+		LEFT OUTER JOIN (
+			SELECT row_id, shop_id -- aaron_train_wifi_each_loc_sample
+			FROM (
+				SELECT row_id, shop_condidate AS shop_id
+				FROM aaron_train_feature_shop_cwifi_loc_record
+				WHERE shop_condidate_avg_loss_rank <= 3
+			) a
+		) b
+		ON a.row_id = b.row_id
+	) a
+	GROUP BY row_id
+) a;
+
+-- 主要针对没有连接wifi的记录。wifi经纬度代替店铺经纬度。
+
+-- feture data中此店铺消费并连接wifi的记录中，每条记录的地理位置作为wifi的多个地理位置。
+
+DROP TABLE IF EXISTS aaron_train_feature_shop_cwifi_loc_record;
+
+CREATE TABLE aaron_train_feature_shop_cwifi_loc_record
+AS
+SELECT *
+, rank() OVER (PARTITION BY row_id ORDER BY shop_condidate_avg_loss DESC) AS shop_condidate_avg_loss_rank
+, percent_rank() OVER (PARTITION BY row_id ORDER BY shop_condidate_avg_loss DESC) AS shop_condidate_avg_loss_percent_rank
+FROM (
+	SELECT row_id, mall_id, shop_condidate, COUNT(*) AS shop_condidate_count
+		, SUM(loss) AS shop_condidate_sum_loss, MAX(loss) AS shop_condidate_max_loss
+		, MIN(loss) AS shop_condidate_min_loss, AVG(loss) AS shop_condidate_avg_loss -- loss越大，距离越小。
+		, median(loss) AS shop_condidate_median_loss
+		-- , SUM(distance) AS shop_condidate_sum_distance, MAX(distance) AS shop_condidate_max_distance
+		-- , MIN(distance) AS shop_condidate_min_distance, AVG(distance) AS shop_condidate_avg_distance
+		-- , median(distance) AS shop_condidate_median_distance
+	FROM (
+		SELECT t.*, f.shop_id AS shop_condidate
+			, get_loss(t.longitude, t.latitude, f.longitude, f.latitude) AS loss
+			-- , get_distance(t.longitude, t.latitude, f.longitude, f.latitude) AS distance --	, f.longitude AS f_longitude, f.latitude AS f_latitude
+		FROM aaron_train_1 t
+		LEFT OUTER JOIN (
+			SELECT *
+			FROM aaron_unfold_train_feature1
+			WHERE flag = 'true'
+		) f
+		ON f.mall_id = t.mall_id
+	) a
+	GROUP BY row_id, 
+		mall_id, 
+		shop_condidate
+) a;
+
+-- select * from aaron_train_1  limit 10;
+DROP TABLE IF EXISTS aaron_train_loc_sample;
+
+CREATE TABLE aaron_train_loc_sample
+AS
+SELECT row_id, shop_condidate AS shop_id
+FROM aaron_train_feature_shop_cwifi_loc_record
+WHERE shop_condidate_avg_loss_rank <= 3;
+
+
+-- aaron_train_loc_sample
+
+-- select * from odps_tc_257100_f673506e024.ant_tianchi_ccf_sl_shop_info  limit 100;
+SELECT COUNT(*)
+	, SUM(is_right) / COUNT(*)
+	, SUM(num_count), SUM(is_right)
+FROM (
+	SELECT row_id, MAX(is_right) AS is_right, COUNT(*) AS num_count
+	FROM (
+		SELECT a.row_id
+			, IF(a.shop_id = b.shop_id, 1, 0) AS is_right
+		FROM aaron_train_1 a
+		LEFT OUTER JOIN (
+			SELECT row_id, shop_id -- aaron_train_wifi_each_loc_sample
+			FROM (
+				SELECT row_id, shop_condidate AS shop_id
+				FROM aaron_train_feature_shop_cwifi_loc_record
+				WHERE shop_condidate_avg_loss_rank <= 3
+			) a
+		) b
+		ON a.row_id = b.row_id
+	) a
+	GROUP BY row_id
+) a;
+
+-- 主要针对没有连接wifi的记录。wifi经纬度代替店铺经纬度。
+
+-- feture data中此店铺消费并连接wifi的记录中，每条记录的地理位置作为wifi的多个地理位置。
+
+DROP TABLE IF EXISTS aaron_train_feature_shop_cwifi_loc_record;
+
+CREATE TABLE aaron_train_feature_shop_cwifi_loc_record
+AS
+SELECT *
+, rank() OVER (PARTITION BY row_id ORDER BY shop_condidate_avg_loss DESC) AS shop_condidate_avg_loss_rank
+, percent_rank() OVER (PARTITION BY row_id ORDER BY shop_condidate_avg_loss DESC) AS shop_condidate_avg_loss_percent_rank
+FROM (
+	SELECT row_id, mall_id, shop_condidate, COUNT(*) AS shop_condidate_count
+		, SUM(loss) AS shop_condidate_sum_loss, MAX(loss) AS shop_condidate_max_loss
+		, MIN(loss) AS shop_condidate_min_loss, AVG(loss) AS shop_condidate_avg_loss -- loss越大，距离越小。
+		, median(loss) AS shop_condidate_median_loss
+		-- , SUM(distance) AS shop_condidate_sum_distance, MAX(distance) AS shop_condidate_max_distance
+		-- , MIN(distance) AS shop_condidate_min_distance, AVG(distance) AS shop_condidate_avg_distance
+		-- , median(distance) AS shop_condidate_median_distance
+	FROM (
+		SELECT t.*, f.shop_id AS shop_condidate
+			, get_loss(t.longitude, t.latitude, f.longitude, f.latitude) AS loss
+			-- , get_distance(t.longitude, t.latitude, f.longitude, f.latitude) AS distance --	, f.longitude AS f_longitude, f.latitude AS f_latitude
+		FROM aaron_train_1 t
+		LEFT OUTER JOIN (
+			SELECT *
+			FROM aaron_unfold_train_feature1
+			WHERE flag = 'true'
+		) f
+		ON f.mall_id = t.mall_id
+	) a
+	GROUP BY row_id, 
+		mall_id, 
+		shop_condidate
+) a;
+
+-- select * from aaron_train_1  limit 10;
+DROP TABLE IF EXISTS aaron_train_loc_sample;
+
+CREATE TABLE aaron_train_loc_sample
+AS
+SELECT row_id, shop_condidate AS shop_id
+FROM aaron_train_feature_shop_cwifi_loc_record
+WHERE shop_condidate_avg_loss_rank <= 3;
+
+
+-- aaron_train_loc_sample
+
+-- select * from odps_tc_257100_f673506e024.ant_tianchi_ccf_sl_shop_info  limit 100;
+SELECT COUNT(*)
+	, SUM(is_right) / COUNT(*)
+	, SUM(num_count), SUM(is_right)
+FROM (
+	SELECT row_id, MAX(is_right) AS is_right, COUNT(*) AS num_count
+	FROM (
+		SELECT a.row_id
+			, IF(a.shop_id = b.shop_id, 1, 0) AS is_right
+		FROM aaron_train_1 a
+		LEFT OUTER JOIN (
+			SELECT row_id, shop_id -- aaron_train_wifi_each_loc_sample
+			FROM (
+				SELECT row_id, shop_condidate AS shop_id
+				FROM aaron_train_feature_shop_cwifi_loc_record
+				WHERE shop_condidate_avg_loss_rank <= 3
+			) a
+		) b
+		ON a.row_id = b.row_id
+	) a
+	GROUP BY row_id
+) a;
+
+
+
+
+
+
+-- 主要针对没有连接wifi的记录。wifi经纬度代替店铺经纬度。
+
+-- feture data中此店铺消费并连接wifi的记录中，每条记录的地理位置作为wifi的多个地理位置。
+
+DROP TABLE IF EXISTS aaron_train_feature_shop_cwifi_loc_record;
+
+CREATE TABLE aaron_train_feature_shop_cwifi_loc_record
+AS
+SELECT *
+, rank() OVER (PARTITION BY row_id ORDER BY shop_condidate_avg_loss DESC) AS shop_condidate_avg_loss_rank
+, percent_rank() OVER (PARTITION BY row_id ORDER BY shop_condidate_avg_loss DESC) AS shop_condidate_avg_loss_percent_rank
+FROM (
+	SELECT row_id, mall_id, shop_condidate, COUNT(*) AS shop_condidate_count
+		, SUM(loss) AS shop_condidate_sum_loss, MAX(loss) AS shop_condidate_max_loss
+		, MIN(loss) AS shop_condidate_min_loss, AVG(loss) AS shop_condidate_avg_loss -- loss越大，距离越小。
+		, median(loss) AS shop_condidate_median_loss
+		-- , SUM(distance) AS shop_condidate_sum_distance, MAX(distance) AS shop_condidate_max_distance
+		-- , MIN(distance) AS shop_condidate_min_distance, AVG(distance) AS shop_condidate_avg_distance
+		-- , median(distance) AS shop_condidate_median_distance
+	FROM (
+		SELECT t.*, f.shop_id AS shop_condidate
+			, get_loss(t.longitude, t.latitude, f.longitude, f.latitude) AS loss
+			-- , get_distance(t.longitude, t.latitude, f.longitude, f.latitude) AS distance --	, f.longitude AS f_longitude, f.latitude AS f_latitude
+		FROM aaron_train_1 t
+		LEFT OUTER JOIN (
+			SELECT *
+			FROM aaron_unfold_train_feature1
+			WHERE flag = 'true'
+		) f
+		ON f.mall_id = t.mall_id
+	) a
+	GROUP BY row_id, 
+		mall_id, 
+		shop_condidate
+) a;
+
+-- select * from aaron_train_1  limit 10;
+DROP TABLE IF EXISTS aaron_train_loc_sample;
+
+CREATE TABLE aaron_train_loc_sample
+AS
+SELECT row_id, shop_condidate AS shop_id
+FROM aaron_train_feature_shop_cwifi_loc_record
+WHERE shop_condidate_avg_loss_rank <= 3;
+
+
+-- aaron_train_loc_sample
+
+-- select * from odps_tc_257100_f673506e024.ant_tianchi_ccf_sl_shop_info  limit 100;
+SELECT COUNT(*)
+	, SUM(is_right) / COUNT(*)
+	, SUM(num_count), SUM(is_right)
+FROM (
+	SELECT row_id, MAX(is_right) AS is_right, COUNT(*) AS num_count
+	FROM (
+		SELECT a.row_id
+			, IF(a.shop_id = b.shop_id, 1, 0) AS is_right
+		FROM aaron_train_1 a
+		LEFT OUTER JOIN (
+			SELECT row_id, shop_id -- aaron_train_wifi_each_loc_sample
+			FROM (
+				SELECT row_id, shop_condidate AS shop_id
+				FROM aaron_train_feature_shop_cwifi_loc_record
+				WHERE shop_condidate_avg_loss_rank <= 3
+			) a
+		) b
+		ON a.row_id = b.row_id
+	) a
+	GROUP BY row_id
+) a;
+
+
+-- 主要针对没有连接wifi的记录。wifi经纬度代替店铺经纬度。
+
+-- feture data中此店铺消费并连接wifi的记录中，每条记录的地理位置作为wifi的多个地理位置。
+
+DROP TABLE IF EXISTS aaron_train_feature_shop_cwifi_loc_record;
+
+CREATE TABLE aaron_train_feature_shop_cwifi_loc_record
+AS
+SELECT *
+, rank() OVER (PARTITION BY row_id ORDER BY shop_condidate_avg_loss DESC) AS shop_condidate_avg_loss_rank
+, percent_rank() OVER (PARTITION BY row_id ORDER BY shop_condidate_avg_loss DESC) AS shop_condidate_avg_loss_percent_rank
+FROM (
+	SELECT row_id, mall_id, shop_condidate, COUNT(*) AS shop_condidate_count
+		, SUM(loss) AS shop_condidate_sum_loss, MAX(loss) AS shop_condidate_max_loss
+		, MIN(loss) AS shop_condidate_min_loss, AVG(loss) AS shop_condidate_avg_loss -- loss越大，距离越小。
+		, median(loss) AS shop_condidate_median_loss
+		-- , SUM(distance) AS shop_condidate_sum_distance, MAX(distance) AS shop_condidate_max_distance
+		-- , MIN(distance) AS shop_condidate_min_distance, AVG(distance) AS shop_condidate_avg_distance
+		-- , median(distance) AS shop_condidate_median_distance
+	FROM (
+		SELECT t.*, f.shop_id AS shop_condidate
+			, get_loss(t.longitude, t.latitude, f.longitude, f.latitude) AS loss
+			-- , get_distance(t.longitude, t.latitude, f.longitude, f.latitude) AS distance --	, f.longitude AS f_longitude, f.latitude AS f_latitude
+		FROM aaron_train_1 t
+		LEFT OUTER JOIN (
+			SELECT *
+			FROM aaron_unfold_train_feature1
+			WHERE flag = 'true'
+		) f
+		ON f.mall_id = t.mall_id
+	) a
+	GROUP BY row_id, 
+		mall_id, 
+		shop_condidate
+) a;
+
+-- select * from aaron_train_1  limit 10;
+DROP TABLE IF EXISTS aaron_train_loc_sample;
+
+CREATE TABLE aaron_train_loc_sample
+AS
+SELECT row_id, shop_condidate AS shop_id
+FROM aaron_train_feature_shop_cwifi_loc_record
+WHERE shop_condidate_avg_loss_rank <= 3;
+
+
+-- aaron_train_loc_sample
+
+-- select * from odps_tc_257100_f673506e024.ant_tianchi_ccf_sl_shop_info  limit 100;
+SELECT COUNT(*)
+	, SUM(is_right) / COUNT(*)
+	, SUM(num_count), SUM(is_right)
+FROM (
+	SELECT row_id, MAX(is_right) AS is_right, COUNT(*) AS num_count
+	FROM (
+		SELECT a.row_id
+			, IF(a.shop_id = b.shop_id, 1, 0) AS is_right
+		FROM aaron_train_1 a
+		LEFT OUTER JOIN (
+			SELECT row_id, shop_id -- aaron_train_wifi_each_loc_sample
+			FROM (
+				SELECT row_id, shop_condidate AS shop_id
+				FROM aaron_train_feature_shop_cwifi_loc_record
+				WHERE shop_condidate_avg_loss_rank <= 3
+			) a
+		) b
+		ON a.row_id = b.row_id
+	) a
+	GROUP BY row_id
+) a;
+
+
+-- 主要针对没有连接wifi的记录。wifi经纬度代替店铺经纬度。
+
+-- feture data中此店铺消费并连接wifi的记录中，每条记录的地理位置作为wifi的多个地理位置。
+
+DROP TABLE IF EXISTS aaron_train_feature_shop_cwifi_loc_record;
+
+CREATE TABLE aaron_train_feature_shop_cwifi_loc_record
+AS
+SELECT *
+, rank() OVER (PARTITION BY row_id ORDER BY shop_condidate_avg_loss DESC) AS shop_condidate_avg_loss_rank
+, percent_rank() OVER (PARTITION BY row_id ORDER BY shop_condidate_avg_loss DESC) AS shop_condidate_avg_loss_percent_rank
+FROM (
+	SELECT row_id, mall_id, shop_condidate, COUNT(*) AS shop_condidate_count
+		, SUM(loss) AS shop_condidate_sum_loss, MAX(loss) AS shop_condidate_max_loss
+		, MIN(loss) AS shop_condidate_min_loss, AVG(loss) AS shop_condidate_avg_loss -- loss越大，距离越小。
+		, median(loss) AS shop_condidate_median_loss
+		-- , SUM(distance) AS shop_condidate_sum_distance, MAX(distance) AS shop_condidate_max_distance
+		-- , MIN(distance) AS shop_condidate_min_distance, AVG(distance) AS shop_condidate_avg_distance
+		-- , median(distance) AS shop_condidate_median_distance
+	FROM (
+		SELECT t.*, f.shop_id AS shop_condidate
+			, get_loss(t.longitude, t.latitude, f.longitude, f.latitude) AS loss
+			-- , get_distance(t.longitude, t.latitude, f.longitude, f.latitude) AS distance --	, f.longitude AS f_longitude, f.latitude AS f_latitude
+		FROM aaron_train_1 t
+		LEFT OUTER JOIN (
+			SELECT *
+			FROM aaron_unfold_train_feature1
+			WHERE flag = 'true'
+		) f
+		ON f.mall_id = t.mall_id
+	) a
+	GROUP BY row_id, 
+		mall_id, 
+		shop_condidate
+) a;
+
+-- select * from aaron_train_1  limit 10;
+DROP TABLE IF EXISTS aaron_train_loc_sample;
+
+CREATE TABLE aaron_train_loc_sample
+AS
+SELECT row_id, shop_condidate AS shop_id
+FROM aaron_train_feature_shop_cwifi_loc_record
+WHERE shop_condidate_avg_loss_rank <= 3;
+
+
+-- aaron_train_loc_sample
+
+-- select * from odps_tc_257100_f673506e024.ant_tianchi_ccf_sl_shop_info  limit 100;
+SELECT COUNT(*)
+	, SUM(is_right) / COUNT(*)
+	, SUM(num_count), SUM(is_right)
+FROM (
+	SELECT row_id, MAX(is_right) AS is_right, COUNT(*) AS num_count
+	FROM (
+		SELECT a.row_id
+			, IF(a.shop_id = b.shop_id, 1, 0) AS is_right
+		FROM aaron_train_1 a
+		LEFT OUTER JOIN (
+			SELECT row_id, shop_id -- aaron_train_wifi_each_loc_sample
+			FROM (
+				SELECT row_id, shop_condidate AS shop_id
+				FROM aaron_train_feature_shop_cwifi_loc_record
+				WHERE shop_condidate_avg_loss_rank <= 3
+			) a
+		) b
+		ON a.row_id = b.row_id
+	) a
+	GROUP BY row_id
+) a;
+
+
+-- train_wifi_cos_sample
+DROP TABLE IF EXISTS aaron_train_wifi_cos_record;
+
+CREATE TABLE aaron_train_wifi_cos_record
+AS
+select row_id, shop_condidate, product/pow(t_len*f_len, 0.5) as cos_similarity , signal_knn_loss
+from (
+  select row_id, shop_condidate, sum(product) as product, sum(t_len) as t_len, sum(f_len) as f_len, sum(signal_knn_loss) as signal_knn_loss
+  from (
+	select row_id, shop_condidate, t_pow_signal * f_pow_signal as product, pow(t_pow_signal, 2) as t_len, pow(f_pow_signal, 2) as f_len, pow(f_pow_signal-t_pow_signal, 2) as signal_knn_loss
+	from (
+	  SELECT t.row_id, f.shop_id AS shop_condidate, pow(1.06, t.signal) as t_pow_signal, pow(1.06, f.signal) as f_pow_signal
+	  FROM (
+		  SELECT CAST(signal AS BIGINT) AS signal, row_id, bssid, flag, user_id
+			  , mall_id -- 训练集
+		  FROM aaron_unfold_train1 s
+		  WHERE signal != 'null'
+	  ) t
+	  INNER JOIN (
+		  SELECT mall_id, shop_id, bssid, AVG(signal) AS signal
+		  FROM (
+			  SELECT CAST(signal AS BIGINT) AS signal, row_id, bssid, flag, user_id
+				  , shop_id, mall_id -- signal转bigint，并去除空值。特征集合
+			  FROM aaron_unfold_train_feature1 s
+			  WHERE signal != 'null'
+		  ) a
+		  GROUP BY mall_id, 
+			  shop_id, 
+			  bssid
+		  ) f
+	  ON t.mall_id = f.mall_id and t.bssid=f.bssid
+	)a
+  )a
+  group by row_id, shop_condidate
+)a
+;
+
+DROP TABLE IF EXISTS aaron_train_wifi_cos_record2;
+
+CREATE TABLE aaron_train_wifi_cos_record2
+AS
+SELECT *, rank() OVER (PARTITION BY row_id ORDER BY cos_similarity DESC) AS cos_rank
+FROM aaron_train_wifi_cos_record;
+
+-- 计算 aaron_train_wifi_each_loc_sample 覆盖率:	top3:0.10281533175923452,4846606,149271; top4:0.15571731242371728,5405300,226076; top5: 0.21137993547480569, 5966064, 306889
+-- top4
+SELECT COUNT(*)
+	, SUM(is_right) / COUNT(*)
+	, SUM(num_count), SUM(is_right)
+FROM (
+	SELECT row_id, MAX(is_right) AS is_right, COUNT(*) AS num_count
+	FROM (
+		SELECT a.row_id
+			, IF(a.shop_id = b.shop_id, 1, 0) AS is_right
+		FROM aaron_train_1 a
+		LEFT OUTER JOIN (
+			SELECT row_id, shop_id -- aaron_train_wifi_each_loc_sample
+			FROM (
+				SELECT row_id, shop_condidate AS shop_id
+				FROM aaron_train_wifi_cos_record2
+				WHERE cos_rank <= 5
+			) a
+		) b
+		ON a.row_id = b.row_id
+	) a
+	GROUP BY row_id
+) a;
+
+
+
+-- train_wifi_cos_sample
+DROP TABLE IF EXISTS aaron_train_wifi_cos_record;
+
+CREATE TABLE aaron_train_wifi_cos_record
+AS
+select row_id, shop_condidate, product/pow(t_len*f_len, 0.5) as cos_similarity , signal_knn_loss
+from (
+  select row_id, shop_condidate, sum(product) as product, sum(t_len) as t_len, sum(f_len) as f_len, sum(signal_knn_loss) as signal_knn_loss
+  from (
+	select row_id, shop_condidate, t_pow_signal * f_pow_signal as product, pow(t_pow_signal, 2) as t_len, pow(f_pow_signal, 2) as f_len, pow(f_pow_signal-t_pow_signal, 2) as signal_knn_loss
+	from (
+	  SELECT t.row_id, f.shop_id AS shop_condidate, pow(1.06, t.signal) as t_pow_signal, pow(1.06, f.signal) as f_pow_signal
+	  FROM (
+		  SELECT CAST(signal AS BIGINT) AS signal, row_id, bssid, flag, user_id
+			  , mall_id -- 训练集
+		  FROM aaron_unfold_train1 s
+		  WHERE signal != 'null'
+	  ) t
+	  INNER JOIN (
+		  SELECT mall_id, shop_id, bssid, AVG(signal) AS signal
+		  FROM (
+			  SELECT CAST(signal AS BIGINT) AS signal, row_id, bssid, flag, user_id
+				  , shop_id, mall_id -- signal转bigint，并去除空值。特征集合
+			  FROM aaron_unfold_train_feature1 s
+			  WHERE signal != 'null'
+		  ) a
+		  GROUP BY mall_id, 
+			  shop_id, 
+			  bssid
+		  ) f
+	  ON t.mall_id = f.mall_id and t.bssid=f.bssid
+	)a
+  )a
+  group by row_id, shop_condidate
+)a
+;
+
+DROP TABLE IF EXISTS aaron_train_wifi_cos_record2;
+
+CREATE TABLE aaron_train_wifi_cos_record2
+AS
+SELECT *, rank() OVER (PARTITION BY row_id ORDER BY cos_similarity DESC) AS cos_rank
+FROM aaron_train_wifi_cos_record;
+
+-- 计算 aaron_train_wifi_each_loc_sample 覆盖率:	top3:0.10281533175923452,4846606,149271; top4:0.15571731242371728,5405300,226076; top5: 0.21137993547480569, 5966064, 306889
+-- top4
+SELECT COUNT(*)
+	, SUM(is_right) / COUNT(*)
+	, SUM(num_count), SUM(is_right)
+FROM (
+	SELECT row_id, MAX(is_right) AS is_right, COUNT(*) AS num_count
+	FROM (
+		SELECT a.row_id
+			, IF(a.shop_id = b.shop_id, 1, 0) AS is_right
+		FROM aaron_train_1 a
+		LEFT OUTER JOIN (
+			SELECT row_id, shop_id -- aaron_train_wifi_each_loc_sample
+			FROM (
+				SELECT row_id, shop_condidate AS shop_id
+				FROM aaron_train_wifi_cos_record2
+				WHERE cos_rank <= 5
+			) a
+		) b
+		ON a.row_id = b.row_id
+	) a
+	GROUP BY row_id
+) a;
+
+
+-- train_wifi_cos_sample
+DROP TABLE IF EXISTS aaron_train_wifi_cos_record;
+
+CREATE TABLE aaron_train_wifi_cos_record
+AS
+select row_id, shop_condidate, product/pow(t_len*f_len, 0.5) as cos_similarity , signal_knn_loss
+from (
+  select row_id, shop_condidate, sum(product) as product, sum(t_len) as t_len, sum(f_len) as f_len, sum(signal_knn_loss) as signal_knn_loss
+  from (
+	select row_id, shop_condidate, t_pow_signal * f_pow_signal as product, pow(t_pow_signal, 2) as t_len, pow(f_pow_signal, 2) as f_len, pow(f_pow_signal-t_pow_signal, 2) as signal_knn_loss
+	from (
+	  SELECT t.row_id, f.shop_id AS shop_condidate, pow(1.06, t.signal) as t_pow_signal, pow(1.06, f.signal) as f_pow_signal
+	  FROM (
+		  SELECT CAST(signal AS BIGINT) AS signal, row_id, bssid, flag, user_id
+			  , mall_id -- 训练集
+		  FROM aaron_unfold_train1 s
+		  WHERE signal != 'null'
+	  ) t
+	  INNER JOIN (
+		  SELECT mall_id, shop_id, bssid, AVG(signal) AS signal
+		  FROM (
+			  SELECT CAST(signal AS BIGINT) AS signal, row_id, bssid, flag, user_id
+				  , shop_id, mall_id -- signal转bigint，并去除空值。特征集合
+			  FROM aaron_unfold_train_feature1 s
+			  WHERE signal != 'null'
+		  ) a
+		  GROUP BY mall_id, 
+			  shop_id, 
+			  bssid
+		  ) f
+	  ON t.mall_id = f.mall_id and t.bssid=f.bssid
+	)a
+  )a
+  group by row_id, shop_condidate
+)a
+;
+
+DROP TABLE IF EXISTS aaron_train_wifi_cos_record2;
+
+CREATE TABLE aaron_train_wifi_cos_record2
+AS
+SELECT *, rank() OVER (PARTITION BY row_id ORDER BY cos_similarity DESC) AS cos_rank
+FROM aaron_train_wifi_cos_record;
+
+-- 计算 aaron_train_wifi_each_loc_sample 覆盖率:	top3:0.10281533175923452,4846606,149271; top4:0.15571731242371728,5405300,226076; top5: 0.21137993547480569, 5966064, 306889
+-- top4
+SELECT COUNT(*)
+	, SUM(is_right) / COUNT(*)
+	, SUM(num_count), SUM(is_right)
+FROM (
+	SELECT row_id, MAX(is_right) AS is_right, COUNT(*) AS num_count
+	FROM (
+		SELECT a.row_id
+			, IF(a.shop_id = b.shop_id, 1, 0) AS is_right
+		FROM aaron_train_1 a
+		LEFT OUTER JOIN (
+			SELECT row_id, shop_id -- aaron_train_wifi_each_loc_sample
+			FROM (
+				SELECT row_id, shop_condidate AS shop_id
+				FROM aaron_train_wifi_cos_record2
+				WHERE cos_rank <= 5
+			) a
+		) b
+		ON a.row_id = b.row_id
+	) a
+	GROUP BY row_id
+) a;
+
+
+-- train_wifi_cos_sample
+DROP TABLE IF EXISTS aaron_train_wifi_cos_record;
+
+CREATE TABLE aaron_train_wifi_cos_record
+AS
+select row_id, shop_condidate, product/pow(t_len*f_len, 0.5) as cos_similarity , signal_knn_loss
+from (
+  select row_id, shop_condidate, sum(product) as product, sum(t_len) as t_len, sum(f_len) as f_len, sum(signal_knn_loss) as signal_knn_loss
+  from (
+	select row_id, shop_condidate, t_pow_signal * f_pow_signal as product, pow(t_pow_signal, 2) as t_len, pow(f_pow_signal, 2) as f_len, pow(f_pow_signal-t_pow_signal, 2) as signal_knn_loss
+	from (
+	  SELECT t.row_id, f.shop_id AS shop_condidate, pow(1.06, t.signal) as t_pow_signal, pow(1.06, f.signal) as f_pow_signal
+	  FROM (
+		  SELECT CAST(signal AS BIGINT) AS signal, row_id, bssid, flag, user_id
+			  , mall_id -- 训练集
+		  FROM aaron_unfold_train1 s
+		  WHERE signal != 'null'
+	  ) t
+	  INNER JOIN (
+		  SELECT mall_id, shop_id, bssid, AVG(signal) AS signal
+		  FROM (
+			  SELECT CAST(signal AS BIGINT) AS signal, row_id, bssid, flag, user_id
+				  , shop_id, mall_id -- signal转bigint，并去除空值。特征集合
+			  FROM aaron_unfold_train_feature1 s
+			  WHERE signal != 'null'
+		  ) a
+		  GROUP BY mall_id, 
+			  shop_id, 
+			  bssid
+		  ) f
+	  ON t.mall_id = f.mall_id and t.bssid=f.bssid
+	)a
+  )a
+  group by row_id, shop_condidate
+)a
+;
+
+DROP TABLE IF EXISTS aaron_train_wifi_cos_record2;
+
+CREATE TABLE aaron_train_wifi_cos_record2
+AS
+SELECT *, rank() OVER (PARTITION BY row_id ORDER BY cos_similarity DESC) AS cos_rank
+FROM aaron_train_wifi_cos_record;
+
+-- 计算 aaron_train_wifi_each_loc_sample 覆盖率:	top3:0.10281533175923452,4846606,149271; top4:0.15571731242371728,5405300,226076; top5: 0.21137993547480569, 5966064, 306889
+-- top4
+SELECT COUNT(*)
+	, SUM(is_right) / COUNT(*)
+	, SUM(num_count), SUM(is_right)
+FROM (
+	SELECT row_id, MAX(is_right) AS is_right, COUNT(*) AS num_count
+	FROM (
+		SELECT a.row_id
+			, IF(a.shop_id = b.shop_id, 1, 0) AS is_right
+		FROM aaron_train_1 a
+		LEFT OUTER JOIN (
+			SELECT row_id, shop_id -- aaron_train_wifi_each_loc_sample
+			FROM (
+				SELECT row_id, shop_condidate AS shop_id
+				FROM aaron_train_wifi_cos_record2
+				WHERE cos_rank <= 5
+			) a
+		) b
+		ON a.row_id = b.row_id
+	) a
+	GROUP BY row_id
+) a;
+
+
+-- train_wifi_cos_sample
+DROP TABLE IF EXISTS aaron_train_wifi_cos_record;
+
+CREATE TABLE aaron_train_wifi_cos_record
+AS
+select row_id, shop_condidate, product/pow(t_len*f_len, 0.5) as cos_similarity , signal_knn_loss
+from (
+  select row_id, shop_condidate, sum(product) as product, sum(t_len) as t_len, sum(f_len) as f_len, sum(signal_knn_loss) as signal_knn_loss
+  from (
+	select row_id, shop_condidate, t_pow_signal * f_pow_signal as product, pow(t_pow_signal, 2) as t_len, pow(f_pow_signal, 2) as f_len, pow(f_pow_signal-t_pow_signal, 2) as signal_knn_loss
+	from (
+	  SELECT t.row_id, f.shop_id AS shop_condidate, pow(1.06, t.signal) as t_pow_signal, pow(1.06, f.signal) as f_pow_signal
+	  FROM (
+		  SELECT CAST(signal AS BIGINT) AS signal, row_id, bssid, flag, user_id
+			  , mall_id -- 训练集
+		  FROM aaron_unfold_train1 s
+		  WHERE signal != 'null'
+	  ) t
+	  INNER JOIN (
+		  SELECT mall_id, shop_id, bssid, AVG(signal) AS signal
+		  FROM (
+			  SELECT CAST(signal AS BIGINT) AS signal, row_id, bssid, flag, user_id
+				  , shop_id, mall_id -- signal转bigint，并去除空值。特征集合
+			  FROM aaron_unfold_train_feature1 s
+			  WHERE signal != 'null'
+		  ) a
+		  GROUP BY mall_id, 
+			  shop_id, 
+			  bssid
+		  ) f
+	  ON t.mall_id = f.mall_id and t.bssid=f.bssid
+	)a
+  )a
+  group by row_id, shop_condidate
+)a
+;
+
+DROP TABLE IF EXISTS aaron_train_wifi_cos_record2;
+
+CREATE TABLE aaron_train_wifi_cos_record2
+AS
+SELECT *, rank() OVER (PARTITION BY row_id ORDER BY cos_similarity DESC) AS cos_rank
+FROM aaron_train_wifi_cos_record;
+
+-- 计算 aaron_train_wifi_each_loc_sample 覆盖率:	top3:0.10281533175923452,4846606,149271; top4:0.15571731242371728,5405300,226076; top5: 0.21137993547480569, 5966064, 306889
+-- top4
+SELECT COUNT(*)
+	, SUM(is_right) / COUNT(*)
+	, SUM(num_count), SUM(is_right)
+FROM (
+	SELECT row_id, MAX(is_right) AS is_right, COUNT(*) AS num_count
+	FROM (
+		SELECT a.row_id
+			, IF(a.shop_id = b.shop_id, 1, 0) AS is_right
+		FROM aaron_train_1 a
+		LEFT OUTER JOIN (
+			SELECT row_id, shop_id -- aaron_train_wifi_each_loc_sample
+			FROM (
+				SELECT row_id, shop_condidate AS shop_id
+				FROM aaron_train_wifi_cos_record2
+				WHERE cos_rank <= 5
+			) a
+		) b
+		ON a.row_id = b.row_id
+	) a
+	GROUP BY row_id
+) a;
+
+
+-- train_wifi_cos_sample
+DROP TABLE IF EXISTS aaron_train_wifi_cos_record;
+
+CREATE TABLE aaron_train_wifi_cos_record
+AS
+select row_id, shop_condidate, product/pow(t_len*f_len, 0.5) as cos_similarity , signal_knn_loss
+from (
+  select row_id, shop_condidate, sum(product) as product, sum(t_len) as t_len, sum(f_len) as f_len, sum(signal_knn_loss) as signal_knn_loss
+  from (
+	select row_id, shop_condidate, t_pow_signal * f_pow_signal as product, pow(t_pow_signal, 2) as t_len, pow(f_pow_signal, 2) as f_len, pow(f_pow_signal-t_pow_signal, 2) as signal_knn_loss
+	from (
+	  SELECT t.row_id, f.shop_id AS shop_condidate, pow(1.06, t.signal) as t_pow_signal, pow(1.06, f.signal) as f_pow_signal
+	  FROM (
+		  SELECT CAST(signal AS BIGINT) AS signal, row_id, bssid, flag, user_id
+			  , mall_id -- 训练集
+		  FROM aaron_unfold_train1 s
+		  WHERE signal != 'null'
+	  ) t
+	  INNER JOIN (
+		  SELECT mall_id, shop_id, bssid, AVG(signal) AS signal
+		  FROM (
+			  SELECT CAST(signal AS BIGINT) AS signal, row_id, bssid, flag, user_id
+				  , shop_id, mall_id -- signal转bigint，并去除空值。特征集合
+			  FROM aaron_unfold_train_feature1 s
+			  WHERE signal != 'null'
+		  ) a
+		  GROUP BY mall_id, 
+			  shop_id, 
+			  bssid
+		  ) f
+	  ON t.mall_id = f.mall_id and t.bssid=f.bssid
+	)a
+  )a
+  group by row_id, shop_condidate
+)a
+;
+
+DROP TABLE IF EXISTS aaron_train_wifi_cos_record2;
+
+CREATE TABLE aaron_train_wifi_cos_record2
+AS
+SELECT *, rank() OVER (PARTITION BY row_id ORDER BY cos_similarity DESC) AS cos_rank
+FROM aaron_train_wifi_cos_record;
+
+-- 计算 aaron_train_wifi_each_loc_sample 覆盖率:	top3:0.10281533175923452,4846606,149271; top4:0.15571731242371728,5405300,226076; top5: 0.21137993547480569, 5966064, 306889
+-- top4
+SELECT COUNT(*)
+	, SUM(is_right) / COUNT(*)
+	, SUM(num_count), SUM(is_right)
+FROM (
+	SELECT row_id, MAX(is_right) AS is_right, COUNT(*) AS num_count
+	FROM (
+		SELECT a.row_id
+			, IF(a.shop_id = b.shop_id, 1, 0) AS is_right
+		FROM aaron_train_1 a
+		LEFT OUTER JOIN (
+			SELECT row_id, shop_id -- aaron_train_wifi_each_loc_sample
+			FROM (
+				SELECT row_id, shop_condidate AS shop_id
+				FROM aaron_train_wifi_cos_record2
+				WHERE cos_rank <= 5
+			) a
+		) b
+		ON a.row_id = b.row_id
+	) a
+	GROUP BY row_id
+) a;
+
+
+
+
+
+-- 只用这一个特征： sum_each_signal_knn_loss 
+-- row_id, shop_condidate, sum_each_signal_knn_loss
+-- aaron_train_wifi_cos_each_record
+DROP TABLE IF EXISTS aaron_train_wifi_cos_each_record;
+
+CREATE TABLE aaron_train_wifi_cos_each_record
+AS
+select row_id, shop_condidate, product/pow(t_len*f_len, 0.5) as cos_each_similarity , sum_each_signal_knn_loss, signal_knn2_loss
+from (
+  select row_id, shop_condidate, sum(product) as product, sum(t_len) as t_len, sum(f_len) as f_len, sum(signal_knn_loss) as sum_each_signal_knn_loss
+  , pow(2 * pow(10, 49) ,-sum(signal_knn_loss)) as signal_knn2_loss
+  from (
+	select row_id, shop_condidate, t_pow_signal * f_pow_signal * shop_id_bssid_signal_count as product, pow(t_pow_signal, 2)*shop_id_bssid_signal_count as t_len
+	, pow(f_pow_signal, 2)*shop_id_bssid_signal_count as f_len
+	, pow(f_pow_signal-t_pow_signal, 2)*shop_id_bssid_signal_count as signal_knn_loss
+	from (
+	  SELECT t.row_id, f.shop_id AS shop_condidate, pow(1.014, t.signal) as t_pow_signal, pow(1.014, f.signal) as f_pow_signal, f.shop_id_bssid_signal_count
+	  FROM (
+		  SELECT CAST(signal AS BIGINT) AS signal, row_id, bssid, flag, user_id
+			  , mall_id -- 训练集
+		  FROM aaron_unfold_train1 s
+		  WHERE signal != 'null'
+	  ) t
+	  INNER JOIN (
+		  SELECT mall_id, shop_id, bssid, signal, count(*) as shop_id_bssid_signal_count
+		  FROM (
+			  SELECT CAST(signal AS BIGINT) AS signal, row_id, bssid, flag, user_id
+				  , shop_id, mall_id -- signal转bigint，并去除空值。特征集合
+			  FROM aaron_unfold_train_feature1 s
+			  WHERE signal != 'null'
+		  ) a
+		  GROUP BY mall_id, 
+			  shop_id, 
+			  bssid,
+			  signal
+		  ) f
+	  ON t.mall_id = f.mall_id and t.bssid=f.bssid
+	)a
+  )a
+  group by row_id, shop_condidate
+)a
+;
+
+DROP TABLE IF EXISTS aaron_train_wifi_cos_each_record2;
+
+CREATE TABLE aaron_train_wifi_cos_each_record2
+AS
+SELECT *, rank() OVER (PARTITION BY row_id ORDER BY cos_each_similarity DESC) AS cos_each_similarity_rank
+FROM aaron_train_wifi_cos_each_record;
+
+
+-- 计算 aaron_train_wifi_each_loc_sample 覆盖率:	top3:1451836: 0.15491625775914084,5268601,224913
+-- top4
+SELECT COUNT(*)
+	, SUM(is_right) / COUNT(*)
+	, SUM(num_count), SUM(is_right)
+FROM (
+	SELECT row_id, MAX(is_right) AS is_right, COUNT(*) AS num_count
+	FROM (
+		SELECT a.row_id
+			, IF(a.shop_id = b.shop_id, 1, 0) AS is_right
+		FROM aaron_train_1 a
+		LEFT OUTER JOIN (
+			SELECT row_id, shop_id -- aaron_train_wifi_each_loc_sample
+			FROM (
+				SELECT row_id, shop_condidate AS shop_id
+				FROM aaron_train_wifi_cos_each_record2
+				WHERE cos_each_similarity_rank <= 5
+			) a
+		) b
+		ON a.row_id = b.row_id
+	) a
+	GROUP BY row_id
+) a;
+
+
+
+-- 只用这一个特征： sum_each_signal_knn_loss 
+-- row_id, shop_condidate, sum_each_signal_knn_loss
+-- aaron_train_wifi_cos_each_record
+DROP TABLE IF EXISTS aaron_train_wifi_cos_each_record;
+
+CREATE TABLE aaron_train_wifi_cos_each_record
+AS
+select row_id, shop_condidate, product/pow(t_len*f_len, 0.5) as cos_each_similarity , sum_each_signal_knn_loss, signal_knn2_loss
+from (
+  select row_id, shop_condidate, sum(product) as product, sum(t_len) as t_len, sum(f_len) as f_len, sum(signal_knn_loss) as sum_each_signal_knn_loss
+  , pow(2 * pow(10, 49) ,-sum(signal_knn_loss)) as signal_knn2_loss
+  from (
+	select row_id, shop_condidate, t_pow_signal * f_pow_signal * shop_id_bssid_signal_count as product, pow(t_pow_signal, 2)*shop_id_bssid_signal_count as t_len
+	, pow(f_pow_signal, 2)*shop_id_bssid_signal_count as f_len
+	, pow(f_pow_signal-t_pow_signal, 2)*shop_id_bssid_signal_count as signal_knn_loss
+	from (
+	  SELECT t.row_id, f.shop_id AS shop_condidate, pow(1.014, t.signal) as t_pow_signal, pow(1.014, f.signal) as f_pow_signal, f.shop_id_bssid_signal_count
+	  FROM (
+		  SELECT CAST(signal AS BIGINT) AS signal, row_id, bssid, flag, user_id
+			  , mall_id -- 训练集
+		  FROM aaron_unfold_train1 s
+		  WHERE signal != 'null'
+	  ) t
+	  INNER JOIN (
+		  SELECT mall_id, shop_id, bssid, signal, count(*) as shop_id_bssid_signal_count
+		  FROM (
+			  SELECT CAST(signal AS BIGINT) AS signal, row_id, bssid, flag, user_id
+				  , shop_id, mall_id -- signal转bigint，并去除空值。特征集合
+			  FROM aaron_unfold_train_feature1 s
+			  WHERE signal != 'null'
+		  ) a
+		  GROUP BY mall_id, 
+			  shop_id, 
+			  bssid,
+			  signal
+		  ) f
+	  ON t.mall_id = f.mall_id and t.bssid=f.bssid
+	)a
+  )a
+  group by row_id, shop_condidate
+)a
+;
+
+DROP TABLE IF EXISTS aaron_train_wifi_cos_each_record2;
+
+CREATE TABLE aaron_train_wifi_cos_each_record2
+AS
+SELECT *, rank() OVER (PARTITION BY row_id ORDER BY cos_each_similarity DESC) AS cos_each_similarity_rank
+FROM aaron_train_wifi_cos_each_record;
+
+
+-- 计算 aaron_train_wifi_each_loc_sample 覆盖率:	top3:1451836: 0.15491625775914084,5268601,224913
+-- top4
+SELECT COUNT(*)
+	, SUM(is_right) / COUNT(*)
+	, SUM(num_count), SUM(is_right)
+FROM (
+	SELECT row_id, MAX(is_right) AS is_right, COUNT(*) AS num_count
+	FROM (
+		SELECT a.row_id
+			, IF(a.shop_id = b.shop_id, 1, 0) AS is_right
+		FROM aaron_train_1 a
+		LEFT OUTER JOIN (
+			SELECT row_id, shop_id -- aaron_train_wifi_each_loc_sample
+			FROM (
+				SELECT row_id, shop_condidate AS shop_id
+				FROM aaron_train_wifi_cos_each_record2
+				WHERE cos_each_similarity_rank <= 5
+			) a
+		) b
+		ON a.row_id = b.row_id
+	) a
+	GROUP BY row_id
+) a;
+
+
+-- 只用这一个特征： sum_each_signal_knn_loss 
+-- row_id, shop_condidate, sum_each_signal_knn_loss
+-- aaron_train_wifi_cos_each_record
+DROP TABLE IF EXISTS aaron_train_wifi_cos_each_record;
+
+CREATE TABLE aaron_train_wifi_cos_each_record
+AS
+select row_id, shop_condidate, product/pow(t_len*f_len, 0.5) as cos_each_similarity , sum_each_signal_knn_loss, signal_knn2_loss
+from (
+  select row_id, shop_condidate, sum(product) as product, sum(t_len) as t_len, sum(f_len) as f_len, sum(signal_knn_loss) as sum_each_signal_knn_loss
+  , pow(2 * pow(10, 49) ,-sum(signal_knn_loss)) as signal_knn2_loss
+  from (
+	select row_id, shop_condidate, t_pow_signal * f_pow_signal * shop_id_bssid_signal_count as product, pow(t_pow_signal, 2)*shop_id_bssid_signal_count as t_len
+	, pow(f_pow_signal, 2)*shop_id_bssid_signal_count as f_len
+	, pow(f_pow_signal-t_pow_signal, 2)*shop_id_bssid_signal_count as signal_knn_loss
+	from (
+	  SELECT t.row_id, f.shop_id AS shop_condidate, pow(1.014, t.signal) as t_pow_signal, pow(1.014, f.signal) as f_pow_signal, f.shop_id_bssid_signal_count
+	  FROM (
+		  SELECT CAST(signal AS BIGINT) AS signal, row_id, bssid, flag, user_id
+			  , mall_id -- 训练集
+		  FROM aaron_unfold_train1 s
+		  WHERE signal != 'null'
+	  ) t
+	  INNER JOIN (
+		  SELECT mall_id, shop_id, bssid, signal, count(*) as shop_id_bssid_signal_count
+		  FROM (
+			  SELECT CAST(signal AS BIGINT) AS signal, row_id, bssid, flag, user_id
+				  , shop_id, mall_id -- signal转bigint，并去除空值。特征集合
+			  FROM aaron_unfold_train_feature1 s
+			  WHERE signal != 'null'
+		  ) a
+		  GROUP BY mall_id, 
+			  shop_id, 
+			  bssid,
+			  signal
+		  ) f
+	  ON t.mall_id = f.mall_id and t.bssid=f.bssid
+	)a
+  )a
+  group by row_id, shop_condidate
+)a
+;
+
+DROP TABLE IF EXISTS aaron_train_wifi_cos_each_record2;
+
+CREATE TABLE aaron_train_wifi_cos_each_record2
+AS
+SELECT *, rank() OVER (PARTITION BY row_id ORDER BY cos_each_similarity DESC) AS cos_each_similarity_rank
+FROM aaron_train_wifi_cos_each_record;
+
+
+-- 计算 aaron_train_wifi_each_loc_sample 覆盖率:	top3:1451836: 0.15491625775914084,5268601,224913
+-- top4
+SELECT COUNT(*)
+	, SUM(is_right) / COUNT(*)
+	, SUM(num_count), SUM(is_right)
+FROM (
+	SELECT row_id, MAX(is_right) AS is_right, COUNT(*) AS num_count
+	FROM (
+		SELECT a.row_id
+			, IF(a.shop_id = b.shop_id, 1, 0) AS is_right
+		FROM aaron_train_1 a
+		LEFT OUTER JOIN (
+			SELECT row_id, shop_id -- aaron_train_wifi_each_loc_sample
+			FROM (
+				SELECT row_id, shop_condidate AS shop_id
+				FROM aaron_train_wifi_cos_each_record2
+				WHERE cos_each_similarity_rank <= 5
+			) a
+		) b
+		ON a.row_id = b.row_id
+	) a
+	GROUP BY row_id
+) a;
+
+
+-- 覆盖率：0.7845（aaron_train_cwifi_sample，aaron_train_shop_cwifi_tfidf_sample， aaron_train_shop_cwifi_signal_tfidf_sample， ）
+-- 加入aaron_train_shop_mwifi_sample：0.9026，5124546
+-- 加入aaron_train_people_sample：0.91366,1451836，6781453
+-- 加入aaron_train_wifi_loc_sample：0.9163417906705716, 10965428
+-- 加入：0.91772  13567606
+-- merge sample
+DROP TABLE IF EXISTS aaron_train_sample1;
+
+CREATE TABLE aaron_train_sample1
+AS
+SELECT a.*, b.shop_id AS shop_condidate
+FROM aaron_train_1 a
+LEFT OUTER JOIN (
+	SELECT row_id, shop_id -- aaron_train_cwifi_sample。
+	FROM (
+		SELECT a.row_id, b.shop_id
+		FROM (
+			SELECT *
+			FROM aaron_unfold_train1
+			WHERE flag = 'true'
+		) a
+		INNER JOIN (
+			SELECT *
+			FROM aaron_train_feature_shop_cwifi_count
+			WHERE shop_cwifi_count_rank <= 4
+		) b
+		ON a.bssid = b.bssid
+	) aaron_train_cwifi_sample
+	UNION
+	SELECT row_id, shop_id -- aaron_train_shop_cwifi_tfidf_sample
+	FROM (
+		SELECT row_id, shop_id
+		FROM aaron_train_shop_cwifi_tfidf_1 a
+		WHERE tfidf_rank <= 4
+	) aaron_train_shop_cwifi_tfidf_sample
+	UNION
+	SELECT row_id, shop_id -- aaron_train_shop_cwifi_signal_tfidf_sample
+	FROM (
+		SELECT row_id, shop_id
+		FROM aaron_train_shop_cwifi_signal_tfidf_1 a
+		WHERE shop_tfidf_rank <= 5
+	) aaron_train_shop_cwifi_signal_tfidf_sample
+	UNION
+	SELECT row_id, shop_id -- aaron_train_shop_mwifi_sample
+	FROM aaron_train_shop_mwifi_feature
+	WHERE bssid_shop_rank <= 5
+	UNION
+	SELECT CAST(row_id AS BIGINT) AS row_id, shop_id -- aaron_train_people_sample
+	FROM aaron_train_people_sample
+	UNION
+	SELECT CAST(row_id AS BIGINT) AS row_id, shop_condidate AS shop_id -- aaron_train_wifi_loc_sample
+	FROM aaron_train_wifi_loc_record
+	WHERE shop_condidate_weight_loss_rank <= 5
+	UNION
+	SELECT row_id, shop_condidate AS shop_id -- aaron_train_shop_loc_sample
+	FROM aaron_train_shop_loc_record
+	WHERE shop_loss_rank <= 5
+	UNION
+	SELECT row_id, shop_condidate AS shop_id -- - aaron_train_wifi_each_loc_sample
+	FROM aaron_train_wifi_each_loc_record
+	WHERE sum_shop_each_loc_loss_rank <= 5
+	UNION
+	SELECT row_id, shop_condidate AS shop_id
+	FROM aaron_train_wifi_cos_record2
+	WHERE cos_rank <= 5
+) b
+ON a.row_id = b.row_id;
+
+SELECT COUNT(*)
+FROM aaron_train_sample1;
+
+-- 计算覆盖率
+-- 所有top3覆盖率：92%
+-- v1（某一些改变了阈值）覆盖率：0.9349520193740891,1357397,15304916
+-- v2（v1基础上增加了aaron_train_wifi_each_loc_record）覆盖率：0.9377574326576831,1361470,18448398
+
+-- v3：修改f8了bug：0.9566321540449473,21060532,1388873
+-- v4:加入 aaron_train_wifi_each_loc_record 的覆盖率：0.9630309483991305， 1398163
+-- v5:加入 aaron_train_wifi_cos_record2的覆盖率：0.9650539041599739,29311802,1401100
+
+SELECT COUNT(*)
+	, SUM(is_right) / COUNT(*)
+	, SUM(num_count), SUM(is_right)
+FROM (
+	SELECT row_id, MAX(is_right) AS is_right, COUNT(*) AS num_count
+	FROM (
+		SELECT row_id
+			, IF(shop_id = shop_condidate, 1, 0) AS is_right
+		FROM aaron_train_sample1
+	) a
+	GROUP BY row_id
+) a;
+
+---------------------------------------------------------------feature--------------------------------------------------------------------------------------------------------------
+-- cwifi_count, shop_cwifi_count_rank, shop_cwifi_count, shop_cwifi_rate
+-- bssid shop 的计数2, 特征用此表做join。
+-- aaron_train_feature_shop_cwifi_count_2;
+-- 通过字段shop_id,所连接wifi的bssid关联。aaron_unfold_train1 WHERE flag = 'true'
+DROP TABLE IF EXISTS aaron_train_sample_with_feature_1;
+
+CREATE TABLE aaron_train_sample_with_feature_1
+AS
+SELECT t.*, f.cwifi_count, f.shop_cwifi_count_rank, f.shop_cwifi_count
+FROM aaron_train_sample1 t
+LEFT OUTER JOIN (
+	SELECT a.row_id, b.shop_id, b.cwifi_count, b.shop_cwifi_count_rank, b.shop_cwifi_count
+		, b.shop_cwifi_rate
+	FROM (
+		SELECT DISTINCT row_id, bssid
+		FROM aaron_unfold_train1
+		WHERE flag = 'true'
+	) a
+	INNER JOIN (
+		SELECT *
+		FROM aaron_train_feature_shop_cwifi_count_2
+	) b
+	ON a.bssid = b.bssid
+) f
+ON f.row_id = t.row_id
+	AND f.shop_id = t.shop_condidate
+
+;
+
+
+
+-- shop连接wifi的tfidf
+-- aaron_train_shop_cwifi_tfidf_1
+-- 通过row_id, shop_id关联。
+DROP TABLE IF EXISTS aaron_train_sample_with_feature_2;
+
+CREATE TABLE aaron_train_sample_with_feature_2
+AS
+SELECT t.*, f.tfidf, f.tfidf_rank
+FROM aaron_train_sample_with_feature_1 t
+LEFT OUTER JOIN aaron_train_shop_cwifi_tfidf_1 f
+ON f.row_id = t.row_id
+	AND f.shop_id = t.shop_condidate
+	;
+
+-- 按照shop和wifi信号强度的tfidf
+-- aaron_train_shop_cwifi_signal_tfidf_1
+-- 通过row_id, shop_id关联。
+DROP TABLE IF EXISTS aaron_train_sample_with_feature_3;
+
+CREATE TABLE aaron_train_sample_with_feature_3
+AS
+SELECT t.*, f.shop_tfidf, f.shop_tfidf_rank
+FROM aaron_train_sample_with_feature_2 t
+LEFT OUTER JOIN aaron_train_shop_cwifi_signal_tfidf_1 f
+ON f.row_id = t.row_id
+	AND f.shop_id = t.shop_condidate
+;
+
+-- aaron_train_shop_mwifi_feature
+-- 通过row_id, shop_id关联。
+DROP TABLE IF EXISTS aaron_train_sample_with_feature_4;
+
+CREATE TABLE aaron_train_sample_with_feature_4
+AS
+SELECT t.*, f.shop_mwifi_count, f.mwifi_count, f.shop_mwifi_rate, f.bssid_shop_rank
+FROM aaron_train_sample_with_feature_3 t
+LEFT OUTER JOIN aaron_train_shop_mwifi_feature f
+ON f.row_id = t.row_id
+	AND f.shop_id = t.shop_condidate
+;
+
+
+-- aaron_train_feature_people_shop_count
+-- 通过user_id, shop_id关联。
+-- user_shop_count, user_shop_count_rank, user_shop_count_percent_rank
+DROP TABLE IF EXISTS aaron_train_sample_with_feature_5;
+
+CREATE TABLE aaron_train_sample_with_feature_5
+AS
+SELECT t.*, f.user_shop_count, f.user_shop_count_rank, f.user_shop_count_percent_rank
+FROM aaron_train_sample_with_feature_4 t
+LEFT OUTER JOIN aaron_train_feature_people_shop_count f
+ON f.user_id = t.user_id
+	AND f.shop_id = t.shop_condidate
+;
+-- 13824887
+
+-- aaron_train_shop_loc_record
+-- row_id, shop_id关联。
+-- shop_loss_rank, loss
+DROP TABLE IF EXISTS aaron_train_sample_with_feature_6;
+
+CREATE TABLE aaron_train_sample_with_feature_6
+AS
+SELECT t.*, f.loss, f.shop_loss_rank
+FROM aaron_train_sample_with_feature_5 t
+LEFT OUTER JOIN aaron_train_shop_loc_record f
+ON f.row_id = t.row_id
+	AND f.shop_condidate = t.shop_condidate
+;
+
+
+-- aaron_train_wifi_loc_record
+-- row_id, shop_condidate 关联。
+-- shop_loss_rank, loss
+DROP TABLE IF EXISTS aaron_train_sample_with_feature_7;
+
+CREATE TABLE aaron_train_sample_with_feature_7
+AS
+SELECT t.*, f.weight_loss, f.avg_weight_loss, f.min_weight_loss, f.max_weight_loss, f.shop_condidate_weight_loss_rank
+FROM aaron_train_sample_with_feature_6 t
+LEFT OUTER JOIN aaron_train_wifi_loc_record f
+ON f.row_id = t.row_id
+	AND f.shop_condidate = t.shop_condidate
+;
+
+
+-- aaron_train_feature_shop_mall
+-- 通过shop_id, 关联
+-- shop_mall_count_rate, shop_mall_rank, shop_count
+DROP TABLE IF EXISTS aaron_train_sample_with_feature_8;
+
+CREATE TABLE aaron_train_sample_with_feature_8
+AS
+SELECT t.*, f.shop_mall_count_rate, f.shop_mall_rank, f.shop_count
+FROM aaron_train_sample_with_feature_7 t
+LEFT OUTER JOIN aaron_train_feature_shop_mall f
+ON f.shop_id = t.shop_condidate
+;
+
+-- aaron_train_wifi_each_loc_record
+-- 通过row_id,shop_id, 关联
+-- sum_shop_each_loc_loss_rank, sum_shop_each_loc_loss, max_shop_each_loc_loss, min_shop_each_loc_loss, avg_shop_each_loc_loss
+DROP TABLE IF EXISTS aaron_train_sample_with_feature_9;
+
+CREATE TABLE aaron_train_sample_with_feature_9
+AS
+SELECT t.*, f.sum_shop_each_loc_loss_rank, f.sum_shop_each_loc_loss, f.max_shop_each_loc_loss, f.min_shop_each_loc_loss
+	, f.avg_shop_each_loc_loss
+FROM aaron_train_sample_with_feature_8 t
+LEFT OUTER JOIN aaron_train_wifi_each_loc_record f
+ON t.shop_condidate = f.shop_condidate
+	AND f.row_id = t.row_id
+;
+
+
+
+------------------------------------------------
+-- aaron_train_wifi_cos_record2
+-- 通过row_id, shop_condidate 关联。
+DROP TABLE IF EXISTS aaron_train_sample_with_feature_10;
+
+CREATE TABLE aaron_train_sample_with_feature_10
+AS
+SELECT t.*, f.cos_similarity ,f.signal_knn_loss, f.cos_rank
+FROM aaron_train_sample_with_feature_9 t
+LEFT OUTER JOIN aaron_train_wifi_cos_record2 f
+ON t.shop_condidate = f.shop_condidate
+	AND f.row_id = t.row_id
+
+;
+
+
+
+-- 用户曾在该类型的店铺消费过 user_category_rate
+-- aaron_train_feature_user_category
+-- user_id, category_id, user_category_count, user_count, user_category_rate
+-- 通过 user_id, category_id 关联。
+DROP TABLE IF EXISTS aaron_train_sample_with_feature_11;
+
+CREATE TABLE aaron_train_sample_with_feature_11
+AS
+SELECT t.*, f.user_category_count, f.user_count, f.user_category_rate
+FROM (
+	SELECT t.*, b.category_id
+	FROM aaron_train_sample_with_feature_10 t
+	LEFT OUTER JOIN odps_tc_257100_f673506e024.ant_tianchi_ccf_sl_shop_info b
+	ON t.shop_condidate = b.shop_id
+) t
+LEFT OUTER JOIN aaron_train_feature_user_category f
+ON t.user_id = f.user_id
+	AND f.category_id = t.category_id
+;
+
+-- 用户-消费特征 user_price_rate
+-- user_id, price, user_price_count, user_count, user_price_rate, user_max_price, user_max_price, user_sum_price, user_avg_price
+
+DROP TABLE IF EXISTS aaron_train_sample_with_feature_12;
+
+CREATE TABLE aaron_train_sample_with_feature_12
+AS
+SELECT t.*, f.user_price_count, f.user_count user_all_price_count, f.user_price_rate
+	, f.user_max_price, f.user_sum_price, f.user_avg_price, f.user_avg_price - t.price AS user_shop_price_differ
+FROM (
+	SELECT t.*, b.price
+	FROM aaron_train_sample_with_feature_11 t
+	LEFT OUTER JOIN odps_tc_257100_f673506e024.ant_tianchi_ccf_sl_shop_info b
+	ON t.shop_condidate = b.shop_id
+) t
+LEFT OUTER JOIN aaron_train_feature_user_price f
+ON t.user_id = f.user_id
+	AND f.price = t.price
+;
+
+-- # 同一小时时间店铺的统计
+-- 周一为0，周日为6；
+-- shop_id, time_hour
+-- shop_id, is_weekend
+
+DROP TABLE IF EXISTS aaron_train_sample_with_feature_13;
+
+CREATE TABLE aaron_train_sample_with_feature_13
+AS
+SELECT t.*
+	, IF(t.time_hour > f1.max_shop_hour
+		OR t.time_hour < f1.min_shop_hour, 1, 0) AS is_in_shop_business
+	, f1.shop_hour_count, f2.shop_weekend_count
+FROM (
+	SELECT *
+		, IF(day_of_week >= 5, 1, 0) AS is_weekend
+	FROM (
+		SELECT a.*, weekday(TO_DATE(time_stamp, 'yyyy-mm-dd hh:mi')) AS day_of_week
+			, CAST(SUBSTR(time_stamp, 12, 2) AS BIGINT) AS time_hour
+		FROM aaron_train_sample_with_feature_12 a
+	) a
+) t
+LEFT OUTER JOIN aaron_train_feature_user_hour_count f1
+ON t.shop_id = f1.shop_id
+	AND t.time_hour = f1.time_hour
+LEFT OUTER JOIN aaron_train_feature_user_weekend_count f2
+ON t.shop_id = f2.shop_id
+	AND t.is_weekend = f2.is_weekend
+
+;
+-------------------------------------------------------------------------------------
+-- 只用这一个特征： sum_each_signal_knn_loss 
+-- row_id, shop_condidate, sum_each_signal_knn_loss
+-- aaron_train_wifi_cos_each_record
+DROP TABLE IF EXISTS aaron_train_sample_with_feature_14;
+
+CREATE TABLE aaron_train_sample_with_feature_14
+AS
+SELECT t.*, f.sum_each_signal_knn_loss
+FROM aaron_train_sample_with_feature_13 t
+LEFT OUTER JOIN aaron_train_wifi_cos_each_record f
+ON f.row_id = t.row_id
+	AND f.shop_condidate = t.shop_condidate
+	;
+
+
+-- 只用这一个特征： shop_wifi_rank_l1,  shop_wifi_rank_l2
+-- 通过row_id, shop_condidate 关联。
+-- 使用bssid的signal在店铺平均的rank。aaron_train_wifi_l1_l2_record
+DROP TABLE IF EXISTS aaron_train_sample_with_feature_15;
+
+CREATE TABLE aaron_train_sample_with_feature_15
+AS
+SELECT t.*, f.shop_wifi_rank_l1, f.shop_wifi_rank_l2
+FROM aaron_train_sample_with_feature_14 t
+LEFT OUTER JOIN aaron_train_wifi_l1_l2_record f
+ON f.row_id = t.row_id
+	AND f.shop_condidate = t.shop_condidate
+;
+
+
+
+
+
+-- 统计wifi在店铺历史wifi中出现的的相关统计
+-- sum_shop_bssid_count, row_sum_shop_bssid_count, row_sum_shop_bssid_rate
+-- 通过 row_id, shop_condidate join.
+-- aaron_train_wifi_shop_bssid_count;
+DROP TABLE IF EXISTS aaron_train_sample_with_feature_16;
+
+CREATE TABLE aaron_train_sample_with_feature_16
+AS
+SELECT t.*, f.sum_shop_bssid_count, f.row_sum_shop_bssid_rate
+FROM aaron_train_sample_with_feature_15 t
+LEFT OUTER JOIN aaron_train_wifi_shop_bssid_count f
+ON f.row_id = t.row_id
+	AND f.shop_condidate = t.shop_condidate
+;
+
+-- select row_id, shop_condidate, f.sum_shop_bssid_count, f.row_sum_shop_bssid_rate from aaron_train_sample_with_feature_16 f where row_sum_shop_bssid_rate is not null limit 100;
+
+-- shop_weekend_rate
+-- aaron_train_feature_user_weekend_count
+DROP TABLE IF EXISTS aaron_train_sample_with_feature_17;
+
+CREATE TABLE aaron_train_sample_with_feature_17
+AS
+SELECT t.*, f2.shop_weekend_all_count / f2.shop_weekend_all_count AS shop_weekend_rate
+FROM aaron_train_sample_with_feature_16 t
+LEFT OUTER JOIN aaron_train_feature_user_weekend_count f2
+ON t.shop_condidate = f2.shop_id
+	AND t.is_weekend = f2.is_weekend
+
+;
+
+
+-- aaron_train_feature_people_shop_count
+-- 通过user_id, shop_id关联。
+-- 增加字段：user_shop_rate
+DROP TABLE IF EXISTS aaron_train_sample_with_feature_18;
+
+CREATE TABLE aaron_train_sample_with_feature_18
+AS
+SELECT t.*, f.user_shop_rate
+FROM aaron_train_sample_with_feature_17 t
+LEFT OUTER JOIN aaron_train_feature_people_shop_count f
+ON f.user_id = t.user_id
+	AND f.shop_id = t.shop_condidate
+;
+
+

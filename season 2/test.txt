@@ -1,0 +1,456 @@
+-- 主要针对没有连接wifi的记录。wifi经纬度代替店铺经纬度。
+
+-- feture data中此店铺消费并连接wifi的记录中，每条记录的地理位置作为wifi的多个地理位置。
+
+DROP TABLE IF EXISTS aaron_test_feature_shop_cwifi_loc_record;
+
+CREATE TABLE aaron_test_feature_shop_cwifi_loc_record
+AS
+SELECT *
+, rank() OVER (PARTITION BY row_id ORDER BY shop_condidate_avg_loss DESC) AS shop_condidate_avg_loss_rank
+, percent_rank() OVER (PARTITION BY row_id ORDER BY shop_condidate_avg_loss DESC) AS shop_condidate_avg_loss_percent_rank
+FROM (
+	SELECT row_id, mall_id, shop_condidate, COUNT(*) AS shop_condidate_count
+		, SUM(loss) AS shop_condidate_sum_loss, MAX(loss) AS shop_condidate_max_loss
+		, MIN(loss) AS shop_condidate_min_loss, AVG(loss) AS shop_condidate_avg_loss -- loss越大，距离越小。
+		, median(loss) AS shop_condidate_median_loss
+		-- , SUM(distance) AS shop_condidate_sum_distance, MAX(distance) AS shop_condidate_max_distance
+		-- , MIN(distance) AS shop_condidate_min_distance, AVG(distance) AS shop_condidate_avg_distance
+		-- , median(distance) AS shop_condidate_median_distance
+	FROM (
+		SELECT t.*, f.shop_id AS shop_condidate
+			, get_loss(t.longitude, t.latitude, f.longitude, f.latitude) AS loss
+			-- , get_distance(t.longitude, t.latitude, f.longitude, f.latitude) AS distance --	, f.longitude AS f_longitude, f.latitude AS f_latitude
+		FROM aaron_test_1 t
+		LEFT OUTER JOIN (
+			SELECT *
+			FROM aaron_unfold_test_feature1
+			WHERE flag = 'true'
+		) f
+		ON f.mall_id = t.mall_id
+	) a
+	GROUP BY row_id, 
+		mall_id, 
+		shop_condidate
+) a;
+
+-- select * from aaron_test_1  limit 10;
+DROP TABLE IF EXISTS aaron_test_loc_sample;
+
+CREATE TABLE aaron_test_loc_sample
+AS
+SELECT row_id, shop_condidate AS shop_id
+FROM aaron_test_feature_shop_cwifi_loc_record
+WHERE shop_condidate_avg_loss_rank <= 3;
+
+
+-- 主要针对没有连接wifi的记录。wifi经纬度代替店铺经纬度。
+
+-- feture data中此店铺消费并连接wifi的记录中，每条记录的地理位置作为wifi的多个地理位置。
+
+DROP TABLE IF EXISTS aaron_test_feature_shop_cwifi_loc_record;
+
+CREATE TABLE aaron_test_feature_shop_cwifi_loc_record
+AS
+SELECT *
+, rank() OVER (PARTITION BY row_id ORDER BY shop_condidate_avg_loss DESC) AS shop_condidate_avg_loss_rank
+, percent_rank() OVER (PARTITION BY row_id ORDER BY shop_condidate_avg_loss DESC) AS shop_condidate_avg_loss_percent_rank
+FROM (
+	SELECT row_id, mall_id, shop_condidate, COUNT(*) AS shop_condidate_count
+		, SUM(loss) AS shop_condidate_sum_loss, MAX(loss) AS shop_condidate_max_loss
+		, MIN(loss) AS shop_condidate_min_loss, AVG(loss) AS shop_condidate_avg_loss -- loss越大，距离越小。
+		, median(loss) AS shop_condidate_median_loss
+		-- , SUM(distance) AS shop_condidate_sum_distance, MAX(distance) AS shop_condidate_max_distance
+		-- , MIN(distance) AS shop_condidate_min_distance, AVG(distance) AS shop_condidate_avg_distance
+		-- , median(distance) AS shop_condidate_median_distance
+	FROM (
+		SELECT t.*, f.shop_id AS shop_condidate
+			, get_loss(t.longitude, t.latitude, f.longitude, f.latitude) AS loss
+			-- , get_distance(t.longitude, t.latitude, f.longitude, f.latitude) AS distance --	, f.longitude AS f_longitude, f.latitude AS f_latitude
+		FROM aaron_test_1 t
+		LEFT OUTER JOIN (
+			SELECT *
+			FROM aaron_unfold_test_feature1
+			WHERE flag = 'true'
+		) f
+		ON f.mall_id = t.mall_id
+	) a
+	GROUP BY row_id, 
+		mall_id, 
+		shop_condidate
+) a;
+
+-- select * from aaron_test_1  limit 10;
+DROP TABLE IF EXISTS aaron_test_loc_sample;
+
+CREATE TABLE aaron_test_loc_sample
+AS
+SELECT row_id, shop_condidate AS shop_id
+FROM aaron_test_feature_shop_cwifi_loc_record
+WHERE shop_condidate_avg_loss_rank <= 3;
+
+
+-- 主要针对没有连接wifi的记录。wifi经纬度代替店铺经纬度。
+
+-- feture data中此店铺消费并连接wifi的记录中，每条记录的地理位置作为wifi的多个地理位置。
+
+DROP TABLE IF EXISTS aaron_test_feature_shop_cwifi_loc_record;
+
+CREATE TABLE aaron_test_feature_shop_cwifi_loc_record
+AS
+SELECT *
+, rank() OVER (PARTITION BY row_id ORDER BY shop_condidate_avg_loss DESC) AS shop_condidate_avg_loss_rank
+, percent_rank() OVER (PARTITION BY row_id ORDER BY shop_condidate_avg_loss DESC) AS shop_condidate_avg_loss_percent_rank
+FROM (
+	SELECT row_id, mall_id, shop_condidate, COUNT(*) AS shop_condidate_count
+		, SUM(loss) AS shop_condidate_sum_loss, MAX(loss) AS shop_condidate_max_loss
+		, MIN(loss) AS shop_condidate_min_loss, AVG(loss) AS shop_condidate_avg_loss -- loss越大，距离越小。
+		, median(loss) AS shop_condidate_median_loss
+		-- , SUM(distance) AS shop_condidate_sum_distance, MAX(distance) AS shop_condidate_max_distance
+		-- , MIN(distance) AS shop_condidate_min_distance, AVG(distance) AS shop_condidate_avg_distance
+		-- , median(distance) AS shop_condidate_median_distance
+	FROM (
+		SELECT t.*, f.shop_id AS shop_condidate
+			, get_loss(t.longitude, t.latitude, f.longitude, f.latitude) AS loss
+			-- , get_distance(t.longitude, t.latitude, f.longitude, f.latitude) AS distance --	, f.longitude AS f_longitude, f.latitude AS f_latitude
+		FROM aaron_test_1 t
+		LEFT OUTER JOIN (
+			SELECT *
+			FROM aaron_unfold_test_feature1
+			WHERE flag = 'true'
+		) f
+		ON f.mall_id = t.mall_id
+	) a
+	GROUP BY row_id, 
+		mall_id, 
+		shop_condidate
+) a;
+
+-- select * from aaron_test_1  limit 10;
+DROP TABLE IF EXISTS aaron_test_loc_sample;
+
+CREATE TABLE aaron_test_loc_sample
+AS
+SELECT row_id, shop_condidate AS shop_id
+FROM aaron_test_feature_shop_cwifi_loc_record
+WHERE shop_condidate_avg_loss_rank <= 3;
+
+
+-- 统计wifi在店铺历史wifi中出现的的相关统计
+-- sum_shop_bssid_count, row_sum_shop_bssid_count, row_sum_shop_bssid_rate
+-- 通过 row_id, shop_condidate join.
+DROP TABLE IF EXISTS aaron_test_wifi_shop_bssid_count;
+
+CREATE TABLE aaron_test_wifi_shop_bssid_count
+AS
+SELECT row_id, shop_condidate, sum_shop_bssid_count, row_sum_shop_bssid_count
+	, sum_shop_bssid_count / row_sum_shop_bssid_count AS row_sum_shop_bssid_rate
+FROM (
+	SELECT row_id, shop_condidate, sum_shop_bssid_count, SUM(sum_shop_bssid_count) OVER (PARTITION BY row_id ) AS row_sum_shop_bssid_count
+	FROM (
+		SELECT row_id, shop_condidate, SUM(shop_bssid_count) AS sum_shop_bssid_count
+		FROM (
+			SELECT t.*, f.shop_id AS shop_condidate, f.shop_bssid_count
+			FROM (
+				SELECT row_id, bssid, mall_id -- 训练集
+				FROM aaron_unfold_test1 s
+			) t
+			INNER JOIN (
+				SELECT bssid, shop_id, mall_id, COUNT(*) AS shop_bssid_count -- wifi_shop_count
+				FROM aaron_unfold_test_feature1 s
+				GROUP BY bssid, 
+					shop_id, 
+					mall_id
+			) f
+			ON t.mall_id = f.mall_id
+				AND t.bssid = f.bssid
+		) a
+		GROUP BY row_id, 
+			shop_condidate
+	) a
+) a;
+
+
+
+-- 统计wifi在店铺历史wifi中出现的的相关统计
+-- sum_shop_bssid_count, row_sum_shop_bssid_count, row_sum_shop_bssid_rate
+-- 通过 row_id, shop_condidate join.
+DROP TABLE IF EXISTS aaron_test_wifi_shop_bssid_count;
+
+CREATE TABLE aaron_test_wifi_shop_bssid_count
+AS
+SELECT row_id, shop_condidate, sum_shop_bssid_count, row_sum_shop_bssid_count
+	, sum_shop_bssid_count / row_sum_shop_bssid_count AS row_sum_shop_bssid_rate
+FROM (
+	SELECT row_id, shop_condidate, sum_shop_bssid_count, SUM(sum_shop_bssid_count) OVER (PARTITION BY row_id ) AS row_sum_shop_bssid_count
+	FROM (
+		SELECT row_id, shop_condidate, SUM(shop_bssid_count) AS sum_shop_bssid_count
+		FROM (
+			SELECT t.*, f.shop_id AS shop_condidate, f.shop_bssid_count
+			FROM (
+				SELECT row_id, bssid, mall_id -- 训练集
+				FROM aaron_unfold_test1 s
+			) t
+			INNER JOIN (
+				SELECT bssid, shop_id, mall_id, COUNT(*) AS shop_bssid_count -- wifi_shop_count
+				FROM aaron_unfold_test_feature1 s
+				GROUP BY bssid, 
+					shop_id, 
+					mall_id
+			) f
+			ON t.mall_id = f.mall_id
+				AND t.bssid = f.bssid
+		) a
+		GROUP BY row_id, 
+			shop_condidate
+	) a
+) a;
+
+
+-- 统计wifi在店铺历史wifi中出现的的相关统计
+-- sum_shop_bssid_count, row_sum_shop_bssid_count, row_sum_shop_bssid_rate
+-- 通过 row_id, shop_condidate join.
+DROP TABLE IF EXISTS aaron_test_wifi_shop_bssid_count;
+
+CREATE TABLE aaron_test_wifi_shop_bssid_count
+AS
+SELECT row_id, shop_condidate, sum_shop_bssid_count, row_sum_shop_bssid_count
+	, sum_shop_bssid_count / row_sum_shop_bssid_count AS row_sum_shop_bssid_rate
+FROM (
+	SELECT row_id, shop_condidate, sum_shop_bssid_count, SUM(sum_shop_bssid_count) OVER (PARTITION BY row_id ) AS row_sum_shop_bssid_count
+	FROM (
+		SELECT row_id, shop_condidate, SUM(shop_bssid_count) AS sum_shop_bssid_count
+		FROM (
+			SELECT t.*, f.shop_id AS shop_condidate, f.shop_bssid_count
+			FROM (
+				SELECT row_id, bssid, mall_id -- 训练集
+				FROM aaron_unfold_test1 s
+			) t
+			INNER JOIN (
+				SELECT bssid, shop_id, mall_id, COUNT(*) AS shop_bssid_count -- wifi_shop_count
+				FROM aaron_unfold_test_feature1 s
+				GROUP BY bssid, 
+					shop_id, 
+					mall_id
+			) f
+			ON t.mall_id = f.mall_id
+				AND t.bssid = f.bssid
+		) a
+		GROUP BY row_id, 
+			shop_condidate
+	) a
+) a;
+
+
+
+-- 统计wifi在店铺历史wifi中出现的的相关统计
+-- sum_shop_bssid_count, row_sum_shop_bssid_count, row_sum_shop_bssid_rate
+-- 通过 row_id, shop_condidate join.
+DROP TABLE IF EXISTS aaron_test_wifi_shop_bssid_count;
+
+CREATE TABLE aaron_test_wifi_shop_bssid_count
+AS
+SELECT row_id, shop_condidate, sum_shop_bssid_count, row_sum_shop_bssid_count
+	, sum_shop_bssid_count / row_sum_shop_bssid_count AS row_sum_shop_bssid_rate
+FROM (
+	SELECT row_id, shop_condidate, sum_shop_bssid_count, SUM(sum_shop_bssid_count) OVER (PARTITION BY row_id ) AS row_sum_shop_bssid_count
+	FROM (
+		SELECT row_id, shop_condidate, SUM(shop_bssid_count) AS sum_shop_bssid_count
+		FROM (
+			SELECT t.*, f.shop_id AS shop_condidate, f.shop_bssid_count
+			FROM (
+				SELECT row_id, bssid, mall_id -- 训练集
+				FROM aaron_unfold_test1 s
+			) t
+			INNER JOIN (
+				SELECT bssid, shop_id, mall_id, COUNT(*) AS shop_bssid_count -- wifi_shop_count
+				FROM aaron_unfold_test_feature1 s
+				GROUP BY bssid, 
+					shop_id, 
+					mall_id
+			) f
+			ON t.mall_id = f.mall_id
+				AND t.bssid = f.bssid
+		) a
+		GROUP BY row_id, 
+			shop_condidate
+	) a
+) a;
+
+
+-- 统计wifi在店铺历史wifi中出现的的相关统计
+-- sum_shop_bssid_count, row_sum_shop_bssid_count, row_sum_shop_bssid_rate
+-- 通过 row_id, shop_condidate join.
+DROP TABLE IF EXISTS aaron_test_wifi_shop_bssid_count;
+
+CREATE TABLE aaron_test_wifi_shop_bssid_count
+AS
+SELECT row_id, shop_condidate, sum_shop_bssid_count, row_sum_shop_bssid_count
+	, sum_shop_bssid_count / row_sum_shop_bssid_count AS row_sum_shop_bssid_rate
+FROM (
+	SELECT row_id, shop_condidate, sum_shop_bssid_count, SUM(sum_shop_bssid_count) OVER (PARTITION BY row_id ) AS row_sum_shop_bssid_count
+	FROM (
+		SELECT row_id, shop_condidate, SUM(shop_bssid_count) AS sum_shop_bssid_count
+		FROM (
+			SELECT t.*, f.shop_id AS shop_condidate, f.shop_bssid_count
+			FROM (
+				SELECT row_id, bssid, mall_id -- 训练集
+				FROM aaron_unfold_test1 s
+			) t
+			INNER JOIN (
+				SELECT bssid, shop_id, mall_id, COUNT(*) AS shop_bssid_count -- wifi_shop_count
+				FROM aaron_unfold_test_feature1 s
+				GROUP BY bssid, 
+					shop_id, 
+					mall_id
+			) f
+			ON t.mall_id = f.mall_id
+				AND t.bssid = f.bssid
+		) a
+		GROUP BY row_id, 
+			shop_condidate
+	) a
+) a;
+
+
+
+-- 统计wifi在店铺历史wifi中出现的的相关统计
+-- sum_shop_bssid_count, row_sum_shop_bssid_count, row_sum_shop_bssid_rate
+-- 通过 row_id, shop_condidate join.
+DROP TABLE IF EXISTS aaron_test_wifi_shop_bssid_count;
+
+CREATE TABLE aaron_test_wifi_shop_bssid_count
+AS
+SELECT row_id, shop_condidate, sum_shop_bssid_count, row_sum_shop_bssid_count
+	, sum_shop_bssid_count / row_sum_shop_bssid_count AS row_sum_shop_bssid_rate
+FROM (
+	SELECT row_id, shop_condidate, sum_shop_bssid_count, SUM(sum_shop_bssid_count) OVER (PARTITION BY row_id ) AS row_sum_shop_bssid_count
+	FROM (
+		SELECT row_id, shop_condidate, SUM(shop_bssid_count) AS sum_shop_bssid_count
+		FROM (
+			SELECT t.*, f.shop_id AS shop_condidate, f.shop_bssid_count
+			FROM (
+				SELECT row_id, bssid, mall_id -- 训练集
+				FROM aaron_unfold_test1 s
+			) t
+			INNER JOIN (
+				SELECT bssid, shop_id, mall_id, COUNT(*) AS shop_bssid_count -- wifi_shop_count
+				FROM aaron_unfold_test_feature1 s
+				GROUP BY bssid, 
+					shop_id, 
+					mall_id
+			) f
+			ON t.mall_id = f.mall_id
+				AND t.bssid = f.bssid
+		) a
+		GROUP BY row_id, 
+			shop_condidate
+	) a
+) a;
+
+
+
+-- 统计wifi在店铺历史wifi中出现的的相关统计
+-- sum_shop_bssid_count, row_sum_shop_bssid_count, row_sum_shop_bssid_rate
+-- 通过 row_id, shop_condidate join.
+DROP TABLE IF EXISTS aaron_test_wifi_shop_bssid_count;
+
+CREATE TABLE aaron_test_wifi_shop_bssid_count
+AS
+SELECT row_id, shop_condidate, sum_shop_bssid_count, row_sum_shop_bssid_count
+	, sum_shop_bssid_count / row_sum_shop_bssid_count AS row_sum_shop_bssid_rate
+FROM (
+	SELECT row_id, shop_condidate, sum_shop_bssid_count, SUM(sum_shop_bssid_count) OVER (PARTITION BY row_id ) AS row_sum_shop_bssid_count
+	FROM (
+		SELECT row_id, shop_condidate, SUM(shop_bssid_count) AS sum_shop_bssid_count
+		FROM (
+			SELECT t.*, f.shop_id AS shop_condidate, f.shop_bssid_count
+			FROM (
+				SELECT row_id, bssid, mall_id -- 训练集
+				FROM aaron_unfold_test1 s
+			) t
+			INNER JOIN (
+				SELECT bssid, shop_id, mall_id, COUNT(*) AS shop_bssid_count -- wifi_shop_count
+				FROM aaron_unfold_test_feature1 s
+				GROUP BY bssid, 
+					shop_id, 
+					mall_id
+			) f
+			ON t.mall_id = f.mall_id
+				AND t.bssid = f.bssid
+		) a
+		GROUP BY row_id, 
+			shop_condidate
+	) a
+) a;
+
+
+
+-- 统计wifi在店铺历史wifi中出现的的相关统计
+-- sum_shop_bssid_count, row_sum_shop_bssid_count, row_sum_shop_bssid_rate
+-- 通过 row_id, shop_condidate join.
+DROP TABLE IF EXISTS aaron_test_wifi_shop_bssid_count;
+
+CREATE TABLE aaron_test_wifi_shop_bssid_count
+AS
+SELECT row_id, shop_condidate, sum_shop_bssid_count, row_sum_shop_bssid_count
+	, sum_shop_bssid_count / row_sum_shop_bssid_count AS row_sum_shop_bssid_rate
+FROM (
+	SELECT row_id, shop_condidate, sum_shop_bssid_count, SUM(sum_shop_bssid_count) OVER (PARTITION BY row_id ) AS row_sum_shop_bssid_count
+	FROM (
+		SELECT row_id, shop_condidate, SUM(shop_bssid_count) AS sum_shop_bssid_count
+		FROM (
+			SELECT t.*, f.shop_id AS shop_condidate, f.shop_bssid_count
+			FROM (
+				SELECT row_id, bssid, mall_id -- 训练集
+				FROM aaron_unfold_test1 s
+			) t
+			INNER JOIN (
+				SELECT bssid, shop_id, mall_id, COUNT(*) AS shop_bssid_count -- wifi_shop_count
+				FROM aaron_unfold_test_feature1 s
+				GROUP BY bssid, 
+					shop_id, 
+					mall_id
+			) f
+			ON t.mall_id = f.mall_id
+				AND t.bssid = f.bssid
+		) a
+		GROUP BY row_id, 
+			shop_condidate
+	) a
+) a;
+
+
+-- 统计wifi在店铺历史wifi中出现的的相关统计
+-- sum_shop_bssid_count, row_sum_shop_bssid_count, row_sum_shop_bssid_rate
+-- 通过 row_id, shop_condidate join.
+DROP TABLE IF EXISTS aaron_test_wifi_shop_bssid_count;
+
+CREATE TABLE aaron_test_wifi_shop_bssid_count
+AS
+SELECT row_id, shop_condidate, sum_shop_bssid_count, row_sum_shop_bssid_count
+	, sum_shop_bssid_count / row_sum_shop_bssid_count AS row_sum_shop_bssid_rate
+FROM (
+	SELECT row_id, shop_condidate, sum_shop_bssid_count, SUM(sum_shop_bssid_count) OVER (PARTITION BY row_id ) AS row_sum_shop_bssid_count
+	FROM (
+		SELECT row_id, shop_condidate, SUM(shop_bssid_count) AS sum_shop_bssid_count
+		FROM (
+			SELECT t.*, f.shop_id AS shop_condidate, f.shop_bssid_count
+			FROM (
+				SELECT row_id, bssid, mall_id -- 训练集
+				FROM aaron_unfold_test1 s
+			) t
+			INNER JOIN (
+				SELECT bssid, shop_id, mall_id, COUNT(*) AS shop_bssid_count -- wifi_shop_count
+				FROM aaron_unfold_test_feature1 s
+				GROUP BY bssid, 
+					shop_id, 
+					mall_id
+			) f
+			ON t.mall_id = f.mall_id
+				AND t.bssid = f.bssid
+		) a
+		GROUP BY row_id, 
+			shop_condidate
+	) a
+) a;

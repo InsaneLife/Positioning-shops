@@ -1,0 +1,117 @@
+DROP TABLE IF EXISTS aaron_merge_train;
+
+CREATE TABLE aaron_merge_train
+AS
+select xgb1.row_id, xgb1.shop_condidate, xgb1.probability probability_xgb1, xgb2.probability probability_xgb2, gbdt1.probability probability_gbdt1, gbdt2.probability probability_gbdt2 from 
+(  
+  select distinct row_id, shop_condidate, probability,label from 
+	(
+	  SELECT row_id, shop_condidate,if(prediction_result=0,1.0-prediction_score,prediction_score) as probability,label
+	  FROM aaron_xgb_1_blending1_pred_part2
+	  where shop_condidate is not null
+	)a
+  )xgb1
+  inner join 
+  (
+  select distinct row_id, shop_condidate, probability,label from 
+	(
+	  SELECT row_id, shop_condidate,if(prediction_result=0,1.0-prediction_score,prediction_score) as probability,label
+	  FROM aaron_gbdt_1_blending1_pred_part2
+	  where shop_condidate is not null
+	)a
+  )gbdt1
+on xgb1.row_id=gbdt1.row_id and xgb1.shop_condidate=gbdt1.shop_condidate
+inner join 
+  (
+  select distinct row_id, shop_condidate, probability,label from 
+	(
+	  SELECT row_id, shop_condidate,if(prediction_result=0,1.0-prediction_score,prediction_score) as probability,label
+	  FROM aaron_xgb_2_blending1_pred_part2
+	  where shop_condidate is not null
+	)a
+  )xgb2
+on xgb1.row_id=xgb2.row_id and xgb1.shop_condidate=xgb2.shop_condidate
+inner join 
+  (
+  select distinct row_id, shop_condidate, probability,label from 
+	(
+	  SELECT row_id, shop_condidate,if(prediction_result=0,1.0-prediction_score,prediction_score) as probability,label
+	  FROM aaron_gbdt_2_blending1_pred_part2
+	  where shop_condidate is not null
+	)a
+  )gbdt1
+on xgb1.row_id=gbdt2.row_id and xgb1.shop_condidate=gbdt2.shop_condidate
+;
+
+
+DROP TABLE IF EXISTS aaron_merge_test;
+
+CREATE TABLE aaron_merge_test
+AS
+select xgb.row_id, xgb.shop_condidate, xgb.probability probability_xgb, gbdt.probability probability_gbdt from 
+(  
+  select distinct row_id, shop_condidate, probability from 
+	(
+	  SELECT row_id, shop_condidate,if(prediction_result=0,1.0-prediction_score,prediction_score) as probability
+	  FROM aaron_xgb_1_blending1_pred
+	  where shop_condidate is not null
+	)a
+  )xgb
+  inner join 
+  (
+  select distinct row_id, shop_condidate, probability from 
+	(
+	  SELECT row_id, shop_condidate,if(prediction_result=0,1.0-prediction_score,prediction_score) as probability
+	  FROM aaron_gbdt_1_blending1_pred
+	  where shop_condidate is not null
+	)a
+  )gbdt
+on xgb.row_id=gbdt.row_id and xgb.shop_condidate=gbdt.shop_condidate
+;
+
+
+
+-- train 
+PAI 
+-name GBDT_LR 
+-project algo_public 
+
+-DlabelColName="label" 
+-DinputTableName="aaron_merge_train" 
+-DmodelName="aaron_merge_model" 
+-- f18 + onehot weekday
+-DfeatureColNames="probability_gbdt1,probability_xgb1,probability_gbdt2,probability_xgb2"
+
+-DtreeCount="500"
+-DfeatureSplitValueMaxSize="500"
+-DrandSeed="0"
+-Dshrinkage="0.05"
+-DmaxLeafCount="32"
+-DminLeafSampleCount="500"
+-DsampleRatio="0.6"
+-DmaxDepth="10"
+-DmetricType="0"
+-DfeatureRatio="0.6"
+-DtestRatio="0"
+;
+
+
+drop table if exists aaron_gbdt1_pred_2;
+-- predict
+PAI
+-name prediction
+-project algo_public
+
+-DmodelName="aaron_merge_model"
+-DinputTableName="aaron_merge_test"  -- 测试集合表。
+-DappendColNames="row_id,shop_condidate"
+-DoutputTableName="aaron_merge_pred" -- 输出表。
+
+-DdetailColName="prediction_detail"
+-DitemDelimiter=","
+-DresultColName="prediction_result"
+-Dlifecycle="28"
+-DscoreColName="prediction_score"
+-DkvDelimiter=":"
+-DenableSparse="false";
+

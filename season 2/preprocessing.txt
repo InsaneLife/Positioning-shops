@@ -1,0 +1,144 @@
+-- select * from odps_tc_257100_f673506e024.ant_tianchi_ccf_sl_test where row_id=1 limit 1;
+
+DROP TABLE IF EXISTS aaron_unfold_sl_test1;
+
+CREATE TABLE aaron_unfold_sl_test1
+AS
+SELECT row_id, split_part(wifi_info, '|', 1) AS bssid
+	, split_part(wifi_info, '|', 2) AS signal
+	, split_part(wifi_info, '|', 3) AS flag
+FROM (
+	SELECT myudf(wifi_infos, row_id)
+		AS (wifi_info, row_id)
+	FROM (
+		SELECT *
+		FROM odps_tc_257100_f673506e024.ant_tianchi_ccf_sl_test
+	) a
+) a;
+
+
+-- select count(*) from odps_tc_257100_f673506e024.ant_tianchi_ccf_sl_test;
+-- 	999999, 2402119
+-- select count(*) from aaron_user_shop_behavior;
+DROP TABLE IF EXISTS aaron_user_shop_behavior;
+-- 添加不重复的row_id
+CREATE TABLE aaron_user_shop_behavior
+AS
+SELECT (ROW_NUMBER() OVER (PARTITION BY 1 ORDER BY 1))+ 2402119 + 1 AS row_id, *
+FROM odps_tc_257100_f673506e024.ant_tianchi_ccf_sl_user_shop_behavior;
+
+
+-- 添加mall_id
+DROP TABLE IF EXISTS aaron_user_shop_behavior1;
+
+CREATE TABLE aaron_user_shop_behavior1
+AS
+SELECT b.*, c.mall_id
+FROM aaron_user_shop_behavior b
+LEFT OUTER JOIN odps_tc_257100_f673506e024.ant_tianchi_ccf_sl_shop_info c
+ON b.shop_id = c.shop_id;
+
+-- select * from aaron_user_shop_behavior1 limit 10;
+-------------------------------------------------------------------------------
+-- aaron_unfold_user_shop_behavior1
+DROP TABLE IF EXISTS aaron_unfold_user_shop_behavior1;
+
+
+CREATE TABLE aaron_unfold_user_shop_behavior1
+AS
+SELECT row_id, split_part(wifi_info, '|', 1) AS bssid
+	, split_part(wifi_info, '|', 2) AS signal
+	, split_part(wifi_info, '|', 3) AS flag
+FROM (
+	SELECT myudf(wifi_infos, row_id)
+		AS (wifi_info, row_id)
+	FROM (
+		SELECT *
+		FROM aaron_user_shop_behavior -- 		LIMIT 2
+	) a
+) a;
+
+-- aaron_unfold_user_shop_behavior2
+DROP TABLE IF EXISTS aaron_unfold_user_shop_behavior2;
+
+CREATE TABLE aaron_unfold_user_shop_behavior2
+AS
+SELECT a.*, b.user_id, b.shop_id, b.time_stamp, b.longitude
+	, b.latitude, b.mall_id
+FROM aaron_unfold_user_shop_behavior1 a
+LEFT OUTER JOIN aaron_user_shop_behavior1 b
+ON a.row_id = b.row_id;
+
+-- select min(time_stamp), max(time_stamp) from aaron_user_shop_behavior2;
+-- 2017-07-01 00:00
+-- 2017-08-31 23:50
+
+
+-- aaron_test_1
+DROP TABLE IF EXISTS aaron_test_1;
+
+CREATE TABLE aaron_test_1
+AS
+SELECT * FROM odps_tc_257100_f673506e024.ant_tianchi_ccf_sl_test
+
+-- aaron_unfold_test1
+DROP TABLE IF EXISTS aaron_unfold_test1;
+
+CREATE TABLE aaron_unfold_test1
+AS
+SELECT a.*, b.user_id, b.mall_id, b.time_stamp, b.longitude
+	, b.latitude
+FROM aaron_unfold_sl_test1 a
+LEFT OUTER JOIN odps_tc_257100_f673506e024.ant_tianchi_ccf_sl_test b
+ON a.row_id = b.row_id
+;
+
+
+-- aaron_test_feature_1
+DROP TABLE IF EXISTS aaron_test_feature_1;
+
+CREATE TABLE aaron_test_feature_1
+AS
+SELECT *
+FROM aaron_user_shop_behavior1;
+
+-- aaron_unfold_test_feature1
+DROP TABLE IF EXISTS aaron_unfold_test_feature1;
+
+CREATE TABLE aaron_unfold_test_feature1
+AS
+SELECT *
+FROM aaron_unfold_user_shop_behavior2;
+
+-- aaron_test_feature_1
+DROP TABLE IF EXISTS aaron_test_feature_1;
+
+CREATE TABLE aaron_test_feature_1
+AS
+SELECT *
+FROM aaron_user_shop_behavior1;
+
+-- aaron_unfold_test_feature1
+DROP TABLE IF EXISTS aaron_unfold_test_feature1;
+
+CREATE TABLE aaron_unfold_test_feature1
+AS
+SELECT *
+FROM aaron_unfold_user_shop_behavior2;
+
+-- aaron_test_feature_1
+DROP TABLE IF EXISTS aaron_test_feature_1;
+
+CREATE TABLE aaron_test_feature_1
+AS
+SELECT *
+FROM aaron_user_shop_behavior1;
+
+-- aaron_unfold_test_feature1
+DROP TABLE IF EXISTS aaron_unfold_test_feature1;
+
+CREATE TABLE aaron_unfold_test_feature1
+AS
+SELECT *
+FROM aaron_unfold_user_shop_behavior2;
+

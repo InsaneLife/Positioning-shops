@@ -1,0 +1,133 @@
+-- 缺失值填充
+drop table if exists fill_missing_values_test_input_output;
+drop table if exists aaron_train_table;
+-- train
+-- 缺失值填充。
+PAI 
+-name FillMissingValues
+-project algo_public 
+-DinputTableName="aaron_train_sample_with_feature_18"
+-DoutputTableName="aaron_train_table" 
+-- f18
+-Dconfigs="cwifi_count,null,0;shop_cwifi_count_rank,null,0;shop_cwifi_count,null,0;tfidf_rank,null,0;shop_tfidf_rank,null,0;shop_mwifi_count,null,0;mwifi_count,null,0;bssid_shop_rank,null,0;user_shop_count,null,0;user_shop_count_rank,null,0;shop_loss_rank,null,0;shop_condidate_weight_loss_rank,null,0;shop_mall_rank,null,0;shop_count,null,0;sum_shop_each_loc_loss_rank,null,0;cos_rank,null,0;user_category_count,null,0;user_count,null,0;price,null,0;user_price_count,null,0;user_all_price_count,null,0;user_max_price,null,0;user_sum_price,null,0;day_of_week,null,0;is_weekend,null,0;is_in_shop_business,null,0;shop_hour_count,null,0;shop_weekend_count,null,0;tfidf,null,0;shop_tfidf,null,0;shop_mwifi_rate,null,0;user_shop_count_percent_rank,null,0;loss,null,0;weight_loss,null,0;avg_weight_loss,null,0;min_weight_loss,null,0;max_weight_loss,null,0;shop_mall_count_rate,null,0;sum_shop_each_loc_loss,null,0;max_shop_each_loc_loss,null,0;min_shop_each_loc_loss,null,0;avg_shop_each_loc_loss,null,0;cos_similarity,null,0;signal_knn_loss,null,0;user_category_rate,null,0;user_price_rate,null,0;user_avg_price,null,0;user_shop_price_differ,null,0;sum_shop_bssid_count,null,0;row_sum_shop_bssid_rate,null,0;shop_wifi_rank_l1,null,0;shop_wifi_rank_l2,null,0;sum_each_signal_knn_loss,null,0;shop_weekend_rate,null,0;user_shop_rate,null,0"
+
+-- f17
+-- -Dconfigs="cwifi_count,null,0;shop_cwifi_count_rank,null,0;shop_cwifi_count,null,0;tfidf_rank,null,0;shop_tfidf_rank,null,0;shop_mwifi_count,null,0;mwifi_count,null,0;bssid_shop_rank,null,0;user_shop_count,null,0;user_shop_count_rank,null,0;shop_loss_rank,null,0;shop_condidate_weight_loss_rank,null,0;shop_mall_rank,null,0;shop_count,null,0;sum_shop_each_loc_loss_rank,null,0;cos_rank,null,0;user_category_count,null,0;user_count,null,0;price,null,0;user_price_count,null,0;user_all_price_count,null,0;user_max_price,null,0;user_sum_price,null,0;day_of_week,null,0;is_weekend,null,0;is_in_shop_business,null,0;shop_hour_count,null,0;shop_weekend_count,null,0;tfidf,null,0;shop_tfidf,null,0;shop_mwifi_rate,null,0;user_shop_count_percent_rank,null,0;loss,null,0;weight_loss,null,0;avg_weight_loss,null,0;min_weight_loss,null,0;max_weight_loss,null,0;shop_mall_count_rate,null,0;sum_shop_each_loc_loss,null,0;max_shop_each_loc_loss,null,0;min_shop_each_loc_loss,null,0;avg_shop_each_loc_loss,null,0;cos_similarity,null,0;signal_knn_loss,null,0;user_category_rate,null,0;user_price_rate,null,0;user_avg_price,null,0;user_shop_price_differ,null,0;sum_shop_bssid_count,null,0;row_sum_shop_bssid_rate,null,0;shop_wifi_rank_l1,null,0;shop_wifi_rank_l2,null,0;sum_each_signal_knn_loss,null,0;shop_weekend_rate,null,0"
+-- f16
+-- -Dconfigs="cwifi_count,null,0;shop_cwifi_count_rank,null,0;shop_cwifi_count,null,0;tfidf_rank,null,0;shop_tfidf_rank,null,0;shop_mwifi_count,null,0;mwifi_count,null,0;bssid_shop_rank,null,0;user_shop_count,null,0;user_shop_count_rank,null,0;shop_loss_rank,null,0;shop_condidate_weight_loss_rank,null,0;shop_mall_rank,null,0;shop_count,null,0;sum_shop_each_loc_loss_rank,null,0;cos_rank,null,0;user_category_count,null,0;user_count,null,0;price,null,0;user_price_count,null,0;user_all_price_count,null,0;user_max_price,null,0;user_sum_price,null,0;day_of_week,null,0;is_weekend,null,0;is_in_shop_business,null,0;shop_hour_count,null,0;shop_weekend_count,null,0;tfidf,null,0;shop_tfidf,null,0;shop_mwifi_rate,null,0;user_shop_count_percent_rank,null,0;loss,null,0;weight_loss,null,0;avg_weight_loss,null,0;min_weight_loss,null,0;max_weight_loss,null,0;shop_mall_count_rate,null,0;sum_shop_each_loc_loss,null,0;max_shop_each_loc_loss,null,0;min_shop_each_loc_loss,null,0;avg_shop_each_loc_loss,null,0;cos_similarity,null,0;signal_knn_loss,null,0;user_category_rate,null,0;user_price_rate,null,0;user_avg_price,null,0;user_shop_price_differ,null,0;sum_shop_bssid_count,null,0;row_sum_shop_bssid_rate,null,0;shop_wifi_rank_l1,null,0;shop_wifi_rank_l2,null,0;sum_each_signal_knn_loss,null,0"
+-- f13
+-- -Dconfigs="cwifi_count,null,0;shop_cwifi_count_rank,null,0;shop_cwifi_count,null,0;tfidf_rank,null,0;shop_tfidf_rank,null,0;shop_mwifi_count,null,0;mwifi_count,null,0;bssid_shop_rank,null,0;user_shop_count,null,0;user_shop_count_rank,null,0;shop_loss_rank,null,0;shop_condidate_weight_loss_rank,null,0;shop_mall_rank,null,0;shop_count,null,0;sum_shop_each_loc_loss_rank,null,0;cos_rank,null,0;user_category_count,null,0;user_count,null,0;price,null,0;user_price_count,null,0;user_all_price_count,null,0;user_max_price,null,0;user_sum_price,null,0;day_of_week,null,0;is_weekend,null,0;is_in_shop_business,null,0;shop_hour_count,null,0;shop_weekend_count,null,0;tfidf,null,0;shop_tfidf,null,0;shop_mwifi_rate,null,0;user_shop_count_percent_rank,null,0;loss,null,0;weight_loss,null,0;avg_weight_loss,null,0;min_weight_loss,null,0;max_weight_loss,null,0;shop_mall_count_rate,null,0;sum_shop_each_loc_loss,null,0;max_shop_each_loc_loss,null,0;min_shop_each_loc_loss,null,0;avg_shop_each_loc_loss,null,0;cos_similarity,null,0;signal_knn_loss,null,0;user_category_rate,null,0;user_price_rate,null,0;user_avg_price,null,0;user_shop_price_differ,null,0"
+-- f9
+-- -Dconfigs="cwifi_count,null,0;shop_cwifi_count_rank,null,0;shop_cwifi_count,null,0;tfidf_rank,null,0;shop_tfidf_rank,null,0;shop_mwifi_count,null,0;mwifi_count,null,0;bssid_shop_rank,null,0;user_shop_count,null,0;user_shop_count_rank,null,0;shop_loss_rank,null,0;shop_condidate_weight_loss_rank,null,0;shop_mall_rank,null,0;shop_count,null,0;sum_shop_each_loc_loss_rank,null,0;tfidf,null,0;shop_tfidf,null,0;shop_mwifi_rate,null,0;user_shop_count_percent_rank,null,0;loss,null,0;weight_loss,null,0;avg_weight_loss,null,0;min_weight_loss,null,0;max_weight_loss,null,0;shop_mall_count_rate,null,0;sum_shop_each_loc_loss,null,0;max_shop_each_loc_loss,null,0;min_shop_each_loc_loss,null,0;avg_shop_each_loc_loss,null,0"
+-- f8
+-- -Dconfigs="cwifi_count,null,0;shop_cwifi_count_rank,null,0;tfidf_rank,null,0;shop_cwifi_count,null,0;shop_tfidf_rank,null,0;shop_mwifi_count,null,0;mwifi_count,null,0;bssid_shop_rank,null,0;user_shop_count,null,0;user_shop_count_rank,null,0;shop_loss_rank,null,0;shop_condidate_weight_loss_rank,null,0;shop_mall_rank,null,0;shop_count,null,0;tfidf,null,0;shop_tfidf,null,0;shop_mwifi_rate,null,0;user_shop_count_percent_rank,null,0;loss,null,0;weight_loss,null,0;avg_weight_loss,null,0;min_weight_loss,null,0;max_weight_loss,null,0;shop_mall_count_rate,null,0"
+-DoutputParaTableName="fill_missing_values_test_input_output"
+;
+
+-- 归一化：不影响成绩。
+drop table if exists aaron_train_table2;
+drop table if exists aaron_train_normalize_para_table;
+PAI 
+-name Normalize 
+-project algo_public 
+-DkeepOriginal="true" 
+-DoutputTableName="aaron_train_table2" 
+-- -DinputPartitions="pt=20150501"
+-DinputTableName="aaron_train_table" 
+-DoutputParaTableName="aaron_train_normalize_para_table"
+-- f18
+-DselectedColNames="cwifi_count,shop_cwifi_count_rank,shop_cwifi_count,tfidf_rank,shop_tfidf_rank,shop_mwifi_count,mwifi_count,bssid_shop_rank,user_shop_count,user_shop_count_rank,shop_loss_rank,shop_condidate_weight_loss_rank,shop_mall_rank,shop_count,sum_shop_each_loc_loss_rank,cos_rank,user_category_count,user_count,price,user_price_count,user_all_price_count,user_max_price,user_sum_price,day_of_week,is_weekend,is_in_shop_business,shop_hour_count,shop_weekend_count,tfidf,shop_tfidf,shop_mwifi_rate,user_shop_count_percent_rank,loss,weight_loss,avg_weight_loss,min_weight_loss,max_weight_loss,shop_mall_count_rate,sum_shop_each_loc_loss,max_shop_each_loc_loss,min_shop_each_loc_loss,avg_shop_each_loc_loss,cos_similarity,signal_knn_loss,user_category_rate,user_price_rate,user_avg_price,user_shop_price_differ,sum_shop_bssid_count,row_sum_shop_bssid_rate,shop_wifi_rank_l1,shop_wifi_rank_l2,sum_each_signal_knn_loss,shop_weekend_rate,user_shop_rate"
+;
+-- 标准化：下降。
+PAI 
+-name Standardize 
+-project algo_public 
+-DkeepOriginal="false" 
+-DoutputTableName="aaron_train_table3"
+-DinputTableName="aaron_train_table2" 
+-DselectedColNames="shop_count,avg_shop_each_loc_loss,shop_hour_count,shop_weekend_count,cwifi_count";
+
+
+drop table if exists fill_missing_values_test_input_output;
+drop table if exists aaron_test_table;
+-- test
+-- 缺失值填充。
+PAI 
+-name FillMissingValues
+-project algo_public 
+-DinputTableName="aaron_test_sample_with_feature_18"
+-DoutputTableName="aaron_test_table" 
+-- f18
+-Dconfigs="cwifi_count,null,0;shop_cwifi_count_rank,null,0;shop_cwifi_count,null,0;tfidf_rank,null,0;shop_tfidf_rank,null,0;shop_mwifi_count,null,0;mwifi_count,null,0;bssid_shop_rank,null,0;user_shop_count,null,0;user_shop_count_rank,null,0;shop_loss_rank,null,0;shop_condidate_weight_loss_rank,null,0;shop_mall_rank,null,0;shop_count,null,0;sum_shop_each_loc_loss_rank,null,0;cos_rank,null,0;user_category_count,null,0;user_count,null,0;price,null,0;user_price_count,null,0;user_all_price_count,null,0;user_max_price,null,0;user_sum_price,null,0;day_of_week,null,0;is_weekend,null,0;is_in_shop_business,null,0;shop_hour_count,null,0;shop_weekend_count,null,0;tfidf,null,0;shop_tfidf,null,0;shop_mwifi_rate,null,0;user_shop_count_percent_rank,null,0;loss,null,0;weight_loss,null,0;avg_weight_loss,null,0;min_weight_loss,null,0;max_weight_loss,null,0;shop_mall_count_rate,null,0;sum_shop_each_loc_loss,null,0;max_shop_each_loc_loss,null,0;min_shop_each_loc_loss,null,0;avg_shop_each_loc_loss,null,0;cos_similarity,null,0;signal_knn_loss,null,0;user_category_rate,null,0;user_price_rate,null,0;user_avg_price,null,0;user_shop_price_differ,null,0;sum_shop_bssid_count,null,0;row_sum_shop_bssid_rate,null,0;shop_wifi_rank_l1,null,0;shop_wifi_rank_l2,null,0;sum_each_signal_knn_loss,null,0;shop_weekend_rate,null,0;user_shop_rate,null,0"
+
+-- f17
+-- -Dconfigs="cwifi_count,null,0;shop_cwifi_count_rank,null,0;shop_cwifi_count,null,0;tfidf_rank,null,0;shop_tfidf_rank,null,0;shop_mwifi_count,null,0;mwifi_count,null,0;bssid_shop_rank,null,0;user_shop_count,null,0;user_shop_count_rank,null,0;shop_loss_rank,null,0;shop_condidate_weight_loss_rank,null,0;shop_mall_rank,null,0;shop_count,null,0;sum_shop_each_loc_loss_rank,null,0;cos_rank,null,0;user_category_count,null,0;user_count,null,0;price,null,0;user_price_count,null,0;user_all_price_count,null,0;user_max_price,null,0;user_sum_price,null,0;day_of_week,null,0;is_weekend,null,0;is_in_shop_business,null,0;shop_hour_count,null,0;shop_weekend_count,null,0;tfidf,null,0;shop_tfidf,null,0;shop_mwifi_rate,null,0;user_shop_count_percent_rank,null,0;loss,null,0;weight_loss,null,0;avg_weight_loss,null,0;min_weight_loss,null,0;max_weight_loss,null,0;shop_mall_count_rate,null,0;sum_shop_each_loc_loss,null,0;max_shop_each_loc_loss,null,0;min_shop_each_loc_loss,null,0;avg_shop_each_loc_loss,null,0;cos_similarity,null,0;signal_knn_loss,null,0;user_category_rate,null,0;user_price_rate,null,0;user_avg_price,null,0;user_shop_price_differ,null,0;sum_shop_bssid_count,null,0;row_sum_shop_bssid_rate,null,0;shop_wifi_rank_l1,null,0;shop_wifi_rank_l2,null,0;sum_each_signal_knn_loss,null,0;shop_weekend_rate,null,0"
+-- f16
+-- -Dconfigs="cwifi_count,null,0;shop_cwifi_count_rank,null,0;shop_cwifi_count,null,0;tfidf_rank,null,0;shop_tfidf_rank,null,0;shop_mwifi_count,null,0;mwifi_count,null,0;bssid_shop_rank,null,0;user_shop_count,null,0;user_shop_count_rank,null,0;shop_loss_rank,null,0;shop_condidate_weight_loss_rank,null,0;shop_mall_rank,null,0;shop_count,null,0;sum_shop_each_loc_loss_rank,null,0;cos_rank,null,0;user_category_count,null,0;user_count,null,0;price,null,0;user_price_count,null,0;user_all_price_count,null,0;user_max_price,null,0;user_sum_price,null,0;day_of_week,null,0;is_weekend,null,0;is_in_shop_business,null,0;shop_hour_count,null,0;shop_weekend_count,null,0;tfidf,null,0;shop_tfidf,null,0;shop_mwifi_rate,null,0;user_shop_count_percent_rank,null,0;loss,null,0;weight_loss,null,0;avg_weight_loss,null,0;min_weight_loss,null,0;max_weight_loss,null,0;shop_mall_count_rate,null,0;sum_shop_each_loc_loss,null,0;max_shop_each_loc_loss,null,0;min_shop_each_loc_loss,null,0;avg_shop_each_loc_loss,null,0;cos_similarity,null,0;signal_knn_loss,null,0;user_category_rate,null,0;user_price_rate,null,0;user_avg_price,null,0;user_shop_price_differ,null,0;sum_shop_bssid_count,null,0;row_sum_shop_bssid_rate,null,0;shop_wifi_rank_l1,null,0;shop_wifi_rank_l2,null,0;sum_each_signal_knn_loss,null,0"
+-- f13
+-- -Dconfigs="cwifi_count,null,0;shop_cwifi_count_rank,null,0;shop_cwifi_count,null,0;tfidf_rank,null,0;shop_tfidf_rank,null,0;shop_mwifi_count,null,0;mwifi_count,null,0;bssid_shop_rank,null,0;user_shop_count,null,0;user_shop_count_rank,null,0;shop_loss_rank,null,0;shop_condidate_weight_loss_rank,null,0;shop_mall_rank,null,0;shop_count,null,0;sum_shop_each_loc_loss_rank,null,0;cos_rank,null,0;user_category_count,null,0;user_count,null,0;price,null,0;user_price_count,null,0;user_all_price_count,null,0;user_max_price,null,0;user_sum_price,null,0;day_of_week,null,0;is_weekend,null,0;is_in_shop_business,null,0;shop_hour_count,null,0;shop_weekend_count,null,0;tfidf,null,0;shop_tfidf,null,0;shop_mwifi_rate,null,0;user_shop_count_percent_rank,null,0;loss,null,0;weight_loss,null,0;avg_weight_loss,null,0;min_weight_loss,null,0;max_weight_loss,null,0;shop_mall_count_rate,null,0;sum_shop_each_loc_loss,null,0;max_shop_each_loc_loss,null,0;min_shop_each_loc_loss,null,0;avg_shop_each_loc_loss,null,0;cos_similarity,null,0;signal_knn_loss,null,0;user_category_rate,null,0;user_price_rate,null,0;user_avg_price,null,0;user_shop_price_differ,null,0"
+-- f9
+-- -Dconfigs="cwifi_count,null,0;shop_cwifi_count_rank,null,0;shop_cwifi_count,null,0;tfidf_rank,null,0;shop_tfidf_rank,null,0;shop_mwifi_count,null,0;mwifi_count,null,0;bssid_shop_rank,null,0;user_shop_count,null,0;user_shop_count_rank,null,0;shop_loss_rank,null,0;shop_condidate_weight_loss_rank,null,0;shop_mall_rank,null,0;shop_count,null,0;sum_shop_each_loc_loss_rank,null,0;tfidf,null,0;shop_tfidf,null,0;shop_mwifi_rate,null,0;user_shop_count_percent_rank,null,0;loss,null,0;weight_loss,null,0;avg_weight_loss,null,0;min_weight_loss,null,0;max_weight_loss,null,0;shop_mall_count_rate,null,0;sum_shop_each_loc_loss,null,0;max_shop_each_loc_loss,null,0;min_shop_each_loc_loss,null,0;avg_shop_each_loc_loss,null,0"
+-- f8
+-- -Dconfigs="cwifi_count,null,0;shop_cwifi_count_rank,null,0;tfidf_rank,null,0;shop_cwifi_count,null,0;shop_tfidf_rank,null,0;shop_mwifi_count,null,0;mwifi_count,null,0;bssid_shop_rank,null,0;user_shop_count,null,0;user_shop_count_rank,null,0;shop_loss_rank,null,0;shop_condidate_weight_loss_rank,null,0;shop_mall_rank,null,0;shop_count,null,0;tfidf,null,0;shop_tfidf,null,0;shop_mwifi_rate,null,0;user_shop_count_percent_rank,null,0;loss,null,0;weight_loss,null,0;avg_weight_loss,null,0;min_weight_loss,null,0;max_weight_loss,null,0;shop_mall_count_rate,null,0"
+
+-DoutputParaTableName="fill_missing_values_test_input_output"
+;
+
+-- 归一化
+drop table if exists aaron_test_table2;
+drop table if exists aaron_test_normalize_para_table;
+PAI 
+-name Normalize 
+-project algo_public 
+-DkeepOriginal="true" 
+-DoutputTableName="aaron_test_table2" 
+-- -DinputPartitions="pt=20150501"
+-DinputTableName="aaron_test_table" 
+-DinputParaTableName="aaron_test_normalize_para_table"
+-- f18
+-DselectedColNames="cwifi_count,shop_cwifi_count_rank,shop_cwifi_count,tfidf_rank,shop_tfidf_rank,shop_mwifi_count,mwifi_count,bssid_shop_rank,user_shop_count,user_shop_count_rank,shop_loss_rank,shop_condidate_weight_loss_rank,shop_mall_rank,shop_count,sum_shop_each_loc_loss_rank,cos_rank,user_category_count,user_count,price,user_price_count,user_all_price_count,user_max_price,user_sum_price,day_of_week,is_weekend,is_in_shop_business,shop_hour_count,shop_weekend_count,tfidf,shop_tfidf,shop_mwifi_rate,user_shop_count_percent_rank,loss,weight_loss,avg_weight_loss,min_weight_loss,max_weight_loss,shop_mall_count_rate,sum_shop_each_loc_loss,max_shop_each_loc_loss,min_shop_each_loc_loss,avg_shop_each_loc_loss,cos_similarity,signal_knn_loss,user_category_rate,user_price_rate,user_avg_price,user_shop_price_differ,sum_shop_bssid_count,row_sum_shop_bssid_rate,shop_wifi_rank_l1,shop_wifi_rank_l2,sum_each_signal_knn_loss,shop_weekend_rate,user_shop_rate"
+;
+-- 标准化
+PAI 
+-name Standardize 
+-project algo_public 
+-DkeepOriginal="false" 
+-DoutputTableName="aaron_test_table3"
+-DinputTableName="aaron_test_table2" 
+-DselectedColNames="shop_count,avg_shop_each_loc_loss,shop_hour_count,shop_weekend_count,cwifi_count";
+
+
+
+--- onehot day of week
+DROP TABLE IF EXISTS aaron_xgb_train;
+
+CREATE TABLE aaron_xgb_train
+AS
+SELECT *
+	, IF(shop_id = shop_condidate, 1, 0) AS label
+	, IF(day_of_week = 0, 1, 0) AS day_of_week0
+	, IF(day_of_week = 1, 1, 0) AS day_of_week1
+	, IF(day_of_week = 2, 1, 0) AS day_of_week2
+	, IF(day_of_week = 3, 1, 0) AS day_of_week3
+	, IF(day_of_week = 4, 1, 0) AS day_of_week4
+	, IF(day_of_week = 5, 1, 0) AS day_of_week5
+	, IF(day_of_week = 6, 1, 0) AS day_of_week6
+FROM aaron_train_table
+WHERE shop_condidate IS NOT NULL
+;
+
+
+DROP TABLE IF EXISTS aaron_xgb_test;
+
+CREATE TABLE aaron_xgb_test
+AS
+SELECT *
+	, IF(day_of_week = 0, 1, 0) AS day_of_week0
+	, IF(day_of_week = 1, 1, 0) AS day_of_week1
+	, IF(day_of_week = 2, 1, 0) AS day_of_week2
+	, IF(day_of_week = 3, 1, 0) AS day_of_week3
+	, IF(day_of_week = 4, 1, 0) AS day_of_week4
+	, IF(day_of_week = 5, 1, 0) AS day_of_week5
+	, IF(day_of_week = 6, 1, 0) AS day_of_week6
+FROM aaron_test_table;

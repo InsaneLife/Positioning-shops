@@ -1,0 +1,90 @@
+DROP OFFLINEMODEL IF EXISTS aaron_xgb_1_blending1;
+-- train
+PAI
+-name xgboost
+-DinputTableName="aaron_train_blending1"	-- 输入表
+-DmodelName="aaron_xgb_1_blending1"
+-- f18: user_shop_rate
+-DfeatureColNames="cwifi_count,shop_cwifi_count_rank,shop_cwifi_count,tfidf_rank,shop_tfidf_rank,shop_mwifi_count,mwifi_count,bssid_shop_rank,user_shop_count,user_shop_count_rank,shop_loss_rank,shop_condidate_weight_loss_rank,shop_mall_rank,shop_count,sum_shop_each_loc_loss_rank,cos_rank,user_category_count,user_count,price,user_price_count,user_all_price_count,user_max_price,user_sum_price,day_of_week,is_weekend,is_in_shop_business,shop_hour_count,shop_weekend_count,tfidf,shop_tfidf,shop_mwifi_rate,user_shop_count_percent_rank,loss,weight_loss,avg_weight_loss,min_weight_loss,max_weight_loss,shop_mall_count_rate,sum_shop_each_loc_loss,max_shop_each_loc_loss,min_shop_each_loc_loss,avg_shop_each_loc_loss,cos_similarity,signal_knn_loss,user_category_rate,user_price_rate,user_avg_price,user_shop_price_differ,sum_shop_bssid_count,row_sum_shop_bssid_rate,shop_wifi_rank_l1,shop_wifi_rank_l2,sum_each_signal_knn_loss,shop_weekend_rate,user_shop_rate"
+
+-- f17: shop_weekend_rate
+-- -DfeatureColNames="cwifi_count,shop_cwifi_count_rank,shop_cwifi_count,tfidf_rank,shop_tfidf_rank,shop_mwifi_count,mwifi_count,bssid_shop_rank,user_shop_count,user_shop_count_rank,shop_loss_rank,shop_condidate_weight_loss_rank,shop_mall_rank,shop_count,sum_shop_each_loc_loss_rank,cos_rank,user_category_count,user_count,price,user_price_count,user_all_price_count,user_max_price,user_sum_price,day_of_week,is_weekend,is_in_shop_business,shop_hour_count,shop_weekend_count,tfidf,shop_tfidf,shop_mwifi_rate,user_shop_count_percent_rank,loss,weight_loss,avg_weight_loss,min_weight_loss,max_weight_loss,shop_mall_count_rate,sum_shop_each_loc_loss,max_shop_each_loc_loss,min_shop_each_loc_loss,avg_shop_each_loc_loss,cos_similarity,signal_knn_loss,user_category_rate,user_price_rate,user_avg_price,user_shop_price_differ,sum_shop_bssid_count,row_sum_shop_bssid_rate,shop_wifi_rank_l1,shop_wifi_rank_l2,sum_each_signal_knn_loss,shop_weekend_rate"
+
+-- f16 drop feature: sum_each_signal_knn_loss; 0.8254
+-- -DfeatureColNames="cwifi_count,shop_cwifi_count_rank,shop_cwifi_count,tfidf_rank,shop_tfidf_rank,shop_mwifi_count,mwifi_count,bssid_shop_rank,user_shop_count,user_shop_count_rank,shop_loss_rank,shop_condidate_weight_loss_rank,shop_mall_rank,shop_count,sum_shop_each_loc_loss_rank,cos_rank,user_category_count,user_count,price,user_price_count,user_all_price_count,user_max_price,user_sum_price,day_of_week,is_weekend,is_in_shop_business,shop_hour_count,shop_weekend_count,tfidf,shop_tfidf,shop_mwifi_rate,user_shop_count_percent_rank,loss,weight_loss,avg_weight_loss,min_weight_loss,max_weight_loss,shop_mall_count_rate,sum_shop_each_loc_loss,max_shop_each_loc_loss,min_shop_each_loc_loss,avg_shop_each_loc_loss,cos_similarity,signal_knn_loss,user_category_rate,user_price_rate,user_avg_price,user_shop_price_differ,sum_shop_bssid_count,row_sum_shop_bssid_rate,shop_wifi_rank_l1,shop_wifi_rank_l2"
+
+-- f16: 0.8372
+-- -DfeatureColNames="cwifi_count,shop_cwifi_count_rank,shop_cwifi_count,tfidf_rank,shop_tfidf_rank,shop_mwifi_count,mwifi_count,bssid_shop_rank,user_shop_count,user_shop_count_rank,shop_loss_rank,shop_condidate_weight_loss_rank,shop_mall_rank,shop_count,sum_shop_each_loc_loss_rank,cos_rank,user_category_count,user_count,price,user_price_count,user_all_price_count,user_max_price,user_sum_price,day_of_week,is_weekend,is_in_shop_business,shop_hour_count,shop_weekend_count,tfidf,shop_tfidf,shop_mwifi_rate,user_shop_count_percent_rank,loss,weight_loss,avg_weight_loss,min_weight_loss,max_weight_loss,shop_mall_count_rate,sum_shop_each_loc_loss,max_shop_each_loc_loss,min_shop_each_loc_loss,avg_shop_each_loc_loss,cos_similarity,signal_knn_loss,user_category_rate,user_price_rate,user_avg_price,user_shop_price_differ,sum_shop_bssid_count,row_sum_shop_bssid_rate,shop_wifi_rank_l1,shop_wifi_rank_l2,sum_each_signal_knn_loss"
+
+-- 筛选特征：42
+-- -DfeatureColNames="cwifi_count,shop_cwifi_count_rank,shop_cwifi_count,tfidf_rank,shop_tfidf_rank,shop_mwifi_count,mwifi_count,bssid_shop_rank,user_shop_count,user_shop_count_rank,shop_loss_rank,shop_condidate_weight_loss_rank,shop_mall_rank,shop_count,sum_shop_each_loc_loss_rank,cos_rank,user_category_count,user_price_count,day_of_week,time_hour,is_weekend,shop_hour_count,shop_weekend_count,shop_tfidf,tfidf,shop_mwifi_rate,user_shop_count_percent_rank,loss,weight_loss,min_weight_loss,avg_weight_loss,max_weight_loss,shop_mall_count_rate,sum_shop_each_loc_loss,max_shop_each_loc_loss,min_shop_each_loc_loss,avg_shop_each_loc_loss,cos_similarity,signal_knn_loss,user_category_rate,user_price_rate,user_shop_price_differ"
+-- 去掉 is_in_shop_business, user_all_price_count,user_count
+-- -DfeatureColNames="shop_weekend_count,cwifi_count,shop_cwifi_count_rank,shop_cwifi_count,tfidf_rank,shop_tfidf_rank,shop_mwifi_count,mwifi_count,bssid_shop_rank,user_shop_count,user_shop_count_rank,shop_loss_rank,shop_condidate_weight_loss_rank,shop_mall_rank,shop_count,sum_shop_each_loc_loss_rank,cos_rank,user_category_count,price,user_price_count,user_all_price_count,day_of_week,is_weekend,shop_hour_count,tfidf,shop_tfidf,shop_mwifi_rate,user_shop_count_percent_rank,loss,weight_loss,avg_weight_loss,min_weight_loss,max_weight_loss,shop_mall_count_rate,sum_shop_each_loc_loss,max_shop_each_loc_loss,min_shop_each_loc_loss,avg_shop_each_loc_loss,cos_similarity,signal_knn_loss,user_category_rate,user_price_rate,user_avg_price,user_shop_price_differ"
+
+-- f13 48; 0.8336
+-- -DfeatureColNames="cwifi_count,shop_cwifi_count_rank,shop_cwifi_count,tfidf_rank,shop_tfidf_rank,shop_mwifi_count,mwifi_count,bssid_shop_rank,user_shop_count,user_shop_count_rank,shop_loss_rank,shop_condidate_weight_loss_rank,shop_mall_rank,shop_count,sum_shop_each_loc_loss_rank,cos_rank,user_category_count,user_count,price,user_price_count,user_all_price_count,user_max_price,user_sum_price,day_of_week,is_weekend,is_in_shop_business,shop_hour_count,shop_weekend_count,tfidf,shop_tfidf,shop_mwifi_rate,user_shop_count_percent_rank,loss,weight_loss,avg_weight_loss,min_weight_loss,max_weight_loss,shop_mall_count_rate,sum_shop_each_loc_loss,max_shop_each_loc_loss,min_shop_each_loc_loss,avg_shop_each_loc_loss,cos_similarity,signal_knn_loss,user_category_rate,user_price_rate,user_avg_price,user_shop_price_differ"
+-- f9 drop ,user_shop_count_percent_rank
+-- -DfeatureColNames="cwifi_count,shop_cwifi_count_rank,shop_cwifi_count,tfidf_rank,shop_tfidf_rank,shop_mwifi_count,mwifi_count,bssid_shop_rank,user_shop_count,user_shop_count_rank,shop_loss_rank,shop_condidate_weight_loss_rank,shop_mall_rank,shop_count,sum_shop_each_loc_loss_rank,tfidf,shop_tfidf,shop_mwifi_rate,loss,weight_loss,avg_weight_loss,min_weight_loss,max_weight_loss,shop_mall_count_rate,sum_shop_each_loc_loss,max_shop_each_loc_loss,min_shop_each_loc_loss,avg_shop_each_loc_loss"
+-- f8
+-- -DfeatureColNames="cwifi_count,shop_cwifi_count_rank,tfidf_rank,shop_cwifi_count,shop_tfidf_rank,shop_mwifi_count,mwifi_count,bssid_shop_rank,user_shop_count,user_shop_count_rank,shop_loss_rank,shop_condidate_weight_loss_rank,shop_mall_rank,shop_count,tfidf,shop_tfidf,shop_mwifi_rate,user_shop_count_percent_rank,loss,weight_loss,avg_weight_loss,min_weight_loss,max_weight_loss,shop_mall_count_rate"
+
+-project algo_public
+-Dmin_child_weight="1.1"
+-Dmax_depth="5"
+-Dlambda="10" 
+-Deta="0.01"
+-Dcolsample_bytree="0.7"
+-Dgamma="0"
+-Dsubsample="0.7"
+-Dobjective="binary:logistic"
+
+-DitemDelimiter=","
+-Dseed="0"
+-Dnum_round="1300"
+-DlabelColName="label";
+
+
+
+
+drop table if exists aaron_xgb_1_blending1_pred_part2;
+-- predict
+PAI
+-name prediction
+-project algo_public
+
+-DmodelName="aaron_xgb_1_blending1" -- 模型名。
+-DinputTableName="aaron_train_blending2"  -- 测试集合表。
+-DappendColNames="row_id,shop_condidate,label"
+-DoutputTableName="aaron_xgb_1_blending1_pred_part2" -- 输出表。
+
+-DdetailColName="prediction_detail"
+-DitemDelimiter=","
+-DresultColName="prediction_result"
+-Dlifecycle="28"
+-DscoreColName="prediction_score"
+-DkvDelimiter=":"
+-DenableSparse="false";
+
+
+drop table if exists aaron_xgb_1_blending1_pred;
+-- predict
+PAI
+-name prediction
+-project algo_public
+
+-DmodelName="aaron_xgb_1_blending1" -- 模型名。
+-DinputTableName="aaron_xgb_test"  -- 测试集合表。
+-DappendColNames="row_id,shop_condidate"
+-DoutputTableName="aaron_xgb_1_blending1_pred" -- 输出表。
+
+-DdetailColName="prediction_detail"
+-DitemDelimiter=","
+-DresultColName="prediction_result"
+-Dlifecycle="28"
+-DscoreColName="prediction_score"
+-DkvDelimiter=":"
+-DenableSparse="false";
+
+
+
+
